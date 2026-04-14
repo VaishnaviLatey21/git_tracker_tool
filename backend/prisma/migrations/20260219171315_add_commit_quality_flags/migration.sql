@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "Commit" ADD COLUMN     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ADD COLUMN     "isLowQuality" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "lowQualityReason" TEXT;

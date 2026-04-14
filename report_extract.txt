@@ -1,0 +1,604 @@
+1 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+School of Computing and 
+Mathematical Sciences 
+ 
+CO7201 Individual Project 
+ 
+ 
+Preliminary Report      
+ 
+A tool to track student group Git 
+repositories 
+ 
+ 
+ 
+Vaishnavi Late 
+vl99@student.le.ac.uk 
+249044875 
+ 
+Project Supervisor: Dr. Martina Palusa 
+Principal Marker: Ben Cham 
+ 
+Word Count: 3008 
+27th February 2026 
+
+
+2 
+ 
+ 
+ 
+Contents 
+1. Aims and Objectives ............................................................................................ 3 
+1.1 Aim .............................................................................................................. 3 
+1.2 Objectives...................................................................................................... 3 
+2. Requirements....................................................................................................... 4 
+3. Technical Specification......................................................................................... 5 
+4. Requirements Evaluation Plan ............................................................................. 7 
+4.1 Functional Evaluation ..................................................................................... 7 
+4.2 Performance and Scalability Evaluation ............................................................ 7 
+4.3 Reliability and Data Accuracy Evaluation ......................................................... 7 
+4.4 Testing Evaluation .......................................................................................... 8 
+5 Background Research and Reading list ................................................................ 8 
+6 Time-plan and Risk Plan .................................................................................... 10 
+6.1 Time-plan .................................................................................................... 10 
+6.2 Risk Plan ..................................................................................................... 12 
+7 References ......................................................................................................... 14 
+ 
+ 
+  
+DECLARATION 
+All sentences or passages quoted in this report, or computer code of any form whatsoever 
+used and/or submitted at any stages, which are taken from other people’s work have 
+been specifically acknowledged by clear citation of the source, specifying author, work, 
+date and page(s). Any part of my own written work, or software coding, which is 
+substantially based upon other people’s work, is duly accompanied by clear citation of 
+the source, specifying author, work, date and page(s). I understand that failure to do this 
+amounts to plagiarism and will be considered grounds for failure in this module and the 
+degree examination as a whole. 
+ 
+Name: Vaishnavi Late 
+Date: 27th February 2026 
+
+3 
+ 
+1. Aims and Objectives 
+  
+1.1 Aim 
+ 
+The aim of this project is to design, implement, and critically evaluate a scalable web-based 
+analytical platform that enables module convenors and academic administrators to monitor, 
+assess, and interpret student contributions within collaborative Git repositories. The system 
+seeks to address the limitations of manual repository inspection by introducing an 
+automated analytics framework capable of aggregating, consolidating, and interpreting 
+repository data across multiple branches and contributors. 
+In contemporary software engineering education, collaborative development using Git -
+based version control systems has become standard practice. However, assessing individual 
+contribution within group repositories remains complex due to factors such as dupl icate 
+commits across branches, inconsistent author identities, trivial or low-quality commits, and 
+irregular participation patterns. This project aims to mitigate these challenges by 
+developing an analytics -driven decision -support system that provides stru ctured 
+contribution metrics, quality indicators, and behavioural insights to support fair and 
+evidence-based marking. 
+Beyond functional implementation, the project also aims to investigate the extent to which 
+repository mining techniques can serve as reliable proxies for measuring engagement, 
+collaboration, and meaningful participation in academic software projects. The system will 
+therefore combine data aggregation, rule-based quality detection, and contribution pattern 
+analysis within an integrated dashboard environment designed for usability, transparency, 
+and scalability. 
+ 
+1.2 Objectives 
+ 
+➢ Develop a secure web -based system with role -based access control supporting 
+administrators and module convenors. 
+➢ Integrate with Git hosting platforms (GitHub/GitLab) to automatically retrieve 
+repository data. 
+➢ Aggregate commit metadata across all repository branches and eliminate duplicate 
+commits using commit SHA identifiers. 
+➢ Compute accurate student -level contribution statistics, including total commits and 
+proportional contribution percentages. 
+➢ Implement rule -based commit quality analysis to identify potentially low -value 
+contributions. 
+➢ Detect irregular behavioural patterns such as prolonged inactivity and deadline-related 
+spikes. 
+➢ Generate structured group-level and student-level reports exportable in PDF and CSV 
+formats to support marking decisions. 
+➢ Provide an intuitive visual dashboard supporting interactive exploration of analytics 
+data. 
+➢ Evaluate the reliability and effectiveness of automated repository analytics through 
+defined metrics including result consistency and validation against manual review.  
+ 
+ 
+ 
+
+4 
+ 
+2. Requirements 
+ 
+ 
+Essential Features: 
+ 
+• Develop a web-based platform that allows module convenors to view and manage 
+multiple student group Git repositories from a single dashboard. 
+• Implement role -based authentication and authorisation, supporting at least 
+administrator and module convenor roles with controlled access to repositories and 
+analytics. 
+• Retrieve, store, and aggregate commit metadata from group repositories to calculate 
+accurate contribution statistics for each student. 
+• Collect commits from all repository branches, remove duplicate commits using 
+unique identifiers (e.g., commit SHA), and present a consolidated commit history 
+per student. 
+ 
+Desirable Features: 
+ 
+• Implement rule -based detection mechanisms to identify and flag low -quality 
+commits based on criteria such as generic messages, minimal changes, or 
+whitespace-only modifications. 
+• Design and implement a student identity mapping mechanism that links multiple 
+Git usernames or email addresses to a single verified student profile. 
+• Analyse commit timestamps to detect irregular contribution patterns, including 
+prolonged inactivity and last-minute spikes in activity. 
+• Integrate Git hosting platform APIs to automate bulk creation of group repositories 
+and automatic assignment of students with predefined access permissions. 
+ 
+Optional Features: 
+ 
+• Provide configurable system parameters that allow module convenors to define 
+thresholds for inactivity duration and minimum contribution expectations. 
+• Compute and present contribution distribution metrics that quantify proportional 
+participation among group members. 
+• Generate structured group -level and student -level summary reports containing 
+contribution statistics and flagged indicators to support marking decisions. 
+• Design and evaluate a machine learning model that classifies commits as 
+meaningful or low-quality based on extracted commit features. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+5 
+ 
+3. Technical Specification 
+ 
+System Architecture: 
+ 
+The proposed system follows a structured three-tier architecture composed of a presentation 
+layer (frontend), an application logic layer (backend), and a data persistence layer 
+(database). This architectural approach promotes modularity, maintainability,  and 
+scalability. Each layer operates independently while communicating through well-defined 
+interfaces, ensuring flexibility and extensibility of the system. 
+The system also integrates with external Git hosting platforms and reporting libraries to 
+provide analytical and reporting capabilities. 
+ 
+ 
+Figure 1 – Architecture Diagram 
+ 
+Frontend Layer: 
+The frontend layer is responsible for user interaction, data visualization, and dashboard 
+presentation. It provides distinct interfaces for Administrators and Module Convenors, 
+ensuring role-based access to system features. 
+1. React.js 
+- It is particularly suitable for dashboard-based applications that require dynamic data 
+rendering and interactive analytics views. 
+- React’s component-based architecture supports scalability and clean separation of 
+UI logic, making it suitable for an analytics-heavy system. 
+ 
+2. Tailwind CSS 
+- The use of Tailwind enhances development efficiency while maintaining design 
+consistency across the Admin and Convenor dashboards. 
+
+
+6 
+ 
+ 
+3. Figma (UI/UX Design and Prototyping Tool) 
+- Figma was used during the system design phase to create high-fidelity wireframes 
+and dashboard prototypes before implementation. 
+- The Figma design process included: 
+Designing role-specific dashboards (Admin and Convenor). 
+Structuring navigation flow between modules, groups, and analytics views. 
+Visualizing contribution charts and summary report layouts. 
+ 
+ 
+ 
+Figure 2 – Visualization Diagram 
+ 
+Backend Layer: 
+The backend layer contains the core business logic, authentication mechanisms, analytics 
+engine, and integration with Git hosting APIs. 
+1. Node.js 
+- Handles API requests from the frontend and manages communication with 
+GitHub/GitLab APIs. 
+- Its asynchronous architecture ensures efficient handling of external API calls and 
+database queries. 
+2. Express.js 
+- Implement role-based route protection and handles authentication middleware. 
+- Express enables modular route organization (e.g., modules, groups, reports, 
+analytics), improving maintainability. 
+3. Prisma ORM 
+- Prisma is an Object-Relational Mapping (ORM) tool that provides type-safe 
+database access and schema management. 
+
+
+7 
+ 
+- Define the database schema (User, Module, Group, Repository, Commit). Perform 
+secure and efficient database queries. 
+4. PostgreSQL 
+- A relational database is appropriate for this project due to the structured 
+relationships between modules, groups, users, and repositories. Foreign key 
+constraints ensure data integrity. 
+5. GitHub REST API / GitLab API 
+- The system integrates with Git hosting platforms to retrieve repository data 
+programmatically. 
+ 
+ 
+4. Requirements Evaluation Plan 
+ 
+The evaluation of the proposed Git repository analytics system will be conducted using a 
+structured, multi -dimensional framework designed to assess functional correctness, 
+performance efficiency, reliability, usability, security, and analytical validity. T he 
+evaluation strategy ensures that each requirement defined in the project specification is 
+systematically verified against measurable and testable criteria. 
+ 
+4.1 Functional Evaluation 
+ 
+Functional evaluation will verify that all essential and desirable requirements are correctly 
+implemented and aligned with the project specification. This includes validating role-based 
+authentication and authorization, correct module and group management,  and successful 
+integration with GitHub or GitLab APIs. The analytics engine will be tested to ensure 
+accurate calculation of contribution percentages, correct identification of inactivity periods, 
+and detection of low -quality commits based on defined rule s. Report generation will also 
+be assessed to confirm that PDF and CSV outputs are complete, structured, and consistent 
+with computed analytics results. 
+ 
+4.2 Performance and Scalability Evaluation 
+ 
+Performance and scalability evaluation will assess the system’s ability to process 
+repositories of varying sizes without significant degradation in responsiveness. Testing will 
+involve small, medium, and large commit datasets to measure response times, pro cessing 
+efficiency, and system stability. The efficiency of multi -branch commit consolidation and 
+SHA-based duplicate removal will be examined to ensure optimal time complexity. API 
+request handling and database query performance will also be evaluated to minimize 
+latency and resource consumption. The system will be considered scalable if it maintains 
+consistent performance under realistic academic workloads. 
+ 
+4.3 Reliability and Data Accuracy Evaluation 
+ 
+Reliability and data accuracy evaluation will ensure that analytics outputs precisely reflect 
+repository activity. Calculated commit counts and contribution percentages will be cross -
+validated against raw repository data retrieved from the Git hosting plat form. Controlled 
+test cases will be used to verify mathematical correctness and reproducibility of 
+contribution calculations. Duplicate removal logic and inactivity detection algorithms will 
+be examined to prevent double-counting and threshold miscalculations. Any discrepancies 
+
+8 
+ 
+between raw and processed data will be analysed systematically. The system will be 
+considered reliable if results remain consistent across repeated executions and accurately 
+represent repository activity. 
+ 
+4.4 Testing Evaluation 
+ 
+Unit Testing: Unit testing will focus on verifying the correctness of individual analytical 
+and logical components in isolation. 
+Each function will be tested independently to ensure mathematical accuracy, predictable 
+behavior, and reproducibility of results before integration with other system components. 
+ 
+Integration Testing: Integration testing will evaluate the interaction between the frontend, 
+backend, database, and external Git hosting API. 
+Integration tests ensure that individual components function correctly when combined into 
+a complete workflow, particularly during end-to-end processes such as report generation. 
+ 
+Manual Testing: Manual testing will be conducted to validate user workflows, usability, 
+and overall system behavior under realistic academic scenarios. This includes testing login 
+functionality, module creation, group linking, repository analysis, and report export 
+features. Manual evaluation will also assess dashboard clarity, visual analytics readability, 
+and whether the system effectively supports academic decision-making without confusion 
+or ambiguity. 
+ 
+ 
+5 Background Research and Reading list 
+ 
+Empirical research in Mining Software Repositories demonstrates that while Git commit 
+histories provide a valuable record of collaborative development, raw metrics such as 
+commit counts or lines of code are insufficient indicators of meaningful contribution when 
+interpreted in isolation. Large -scale analyses of GitHub projects show that contribution 
+patterns are often highly uneven, with a small number of contributors accounting for a 
+disproportionate share of activity, and that repository data frequently c ontains structural 
+noise such as duplicated commits across branches and inconsistent contributor identities 
+that can distort results if not cleaned appropriately [1], [2], [3]. Studies examining how 
+contributions are assessed in collaborative environments further indicate that technical 
+signals are shaped by contextual factors [4], [5]. Research on commit characteristics also 
+reveals substantial variation in commit size, frequency, and intent, suggesting that not all 
+commits carry equal informational or developmental value [6], [9], [10]. In parallel, work 
+in learning analytics  highlights that development activity commonly exhibits temporal 
+patterns, including spikes prior to deadlines, which may reflect engagement dynamics but 
+do not automatically equate to sustained participation or quality output [11], [12], [13] . 
+Collectively, these findings suggest that fair and reliable assessment of student group work 
+requires a multidimensional analytical approach that integrates contribution volume, 
+commit quality indicators, temporal behaviour, and rigorous preprocessing of  repository 
+data. 
+
+9 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Online Resources & Documentation: 
+➢ Book - Pro Git (2nd Edition) — Scott Chacon & Ben Straub, covers Git fundamentals, branching, 
+merging, and repository internals.  
+https://git-scm.com/book/en/v2 
+➢ Online Documentation: Prisma ORM Documentation — Database ORM reference. 
+https://www.prisma.io/docs/orm 
+➢ GitLab API Documentation, official reference for GitLab repository analytics. 
+https://docs.gitlab.com/api/rest/ 
+https://doi.org/10.1371/journal.
+pone. 
+0205898 
+ 
+Open access article (PDF)  
+from Semantic Scholar PDF  
+ 
+https://doi.org/10.1145/198579
+3.1985 
+797 
+ 
+https://doi.org/10.1109/ASE.20
+08.69 
+ 
+ 
+https://doi.org/10.1145/256822
+5.256 
+8315 
+ 
+https://doi.org/10.1145/278680
+5.278 
+6850 
+ 
+Paper investigates GitHub 
+mining methods and limitation 
+https://arxiv.org/abs/1807.0240
+0 
+ 
+https://arxiv.org/abs/2007.1091
+2 
+ 
+doi.org/10.1002/smr.1893 
+ 
+https://doi.org/10.1371/journal.
+pone.02 
+05898 
+ 
+Open access article (PDF)  
+from Semantic Scholar PDF 
+ 
+
+10 
+ 
+6 Time-plan and Risk Plan 
+ 
+6.1 Time-plan 
+ 
+This chart presents a high -level timeline of the project , outlining all major development 
+phases from system setup to final submission. It shows the planned duration of each task 
+and the current progress status. 
+ 
+ 
+ 
+ 
+ 
+ 
+Week 1 to Week 4 –  
+ 
+The project timeline was structured using a phased and dependency -driven approach to 
+ensure systematic development and risk minimisation. The initial weeks (Weeks 1–4) focus 
+on system foundations, as these components form the technical backbone required for all 
+subsequent features. Without stable data retrieval and secure role -based access, higher -
+level analytics and dashboards would not function reliably. 
+ 
+
+
+11 
+ 
+ 
+ 
+Week 5 to Week 8 –  
+ 
+The middle phase (Weeks 5 –8) concentrates on developing the analytics engine, 
+configurable thresholds, reporting mechanisms, and export functionality, as these features 
+depend directly on accurate repository consolidation and commit processing. 
+ 
+ 
+ 
+
+
+12 
+ 
+Week 8 to Week 12 –  
+ 
+Finally, in the later phase (Weeks 9 –12) ordering ensures that analytical correctness is 
+established before presentation and optimisation work begins, reducing the risk of rework. 
+By following a progressive build –analyse–refine model, the project maintains logical 
+technical dependencies while allowing sufficient time for testing, performance validation, 
+and academic preparation prior to submission. 
+ 
+ 
+ 
+ 
+6.2 Risk Plan 
+ 
+The development of a repository analytics system that integrates external services and 
+processes potentially large datasets introduces several technical and operational risks. To 
+ensure project stability and reliability, potential risks were identified ear ly and mitigation 
+strategies were incorporated into the system design. 
+ 
+ 
+Risk 1 - Dependence on GitHub/GitLab API rate limits 
+ 
+The risk arises from the system’s reliance on external Git hosting APIs such as GitHub or 
+GitLab. Since these services impose rate limits on API requests, excessive or poorly 
+optimized calls could result in temporary access restrictions or incomplete data retr ieval. 
+The impact of such limitations could include delayed analytics processing, partial 
+repository analysis, or disruption of dashboard functionality. To mitigate this risk, request 
+throttling and pagination mechanisms are implemented to control the frequency and size of 
+API calls. Additionally, caching strategies are incorporated to store repository metadata 
+and previously processed analytics results, thereby redu cing the need for repeated API 
+
+
+13 
+ 
+requests. By minimizing redundant calls and storing intermediate results, the system 
+maintains stability even under rate-limited conditions. 
+ 
+ 
+Risk 2 - Performance issues when processing large multi-branch repositories 
+ 
+Another technical risk concerns the processing of large multi -branch repositories, which 
+may increase computation time and memory usage during commit consolidation and 
+analytics calculations. If not handled efficiently, this could negatively affect dashboa rd 
+responsiveness and overall system performance. The potential impact includes slow 
+processing times, excessive server resource consumption, or performance degradation 
+under moderate loads. To address this, efficient data structures such as hash maps are used 
+for SHA-based duplicate detection, ensuring that commit consolidation operates in optimal 
+time complexity. Database indexing is also applied to frequently queried fields to enhance 
+retrieval performance. These measures help ensure that the system remains responsive and 
+scalable when handling repositories with substantial commit histories. 
+ 
+ 
+Risk 3 - Contributor identity inconsistencies (multiple emails/usernames) 
+ 
+A further risk relates to contributor identity inconsistencies. Students may use multiple 
+email addresses or usernames across commits, leading to fragmented contribution records 
+and inaccurate participation metrics. This issue could undermine the reliabili ty of 
+contribution analysis and potentially affect academic evaluation fairness. To mitigate this 
+risk, the system includes an identity mapping mechanism that links multiple commit 
+identities to a single verified student profile. In addition, administrative users are provided 
+with the ability to manually associate contributor aliases where automatic matching is 
+insufficient. This approach improves data integrity and ensures that analytics outputs reflect 
+actual student participation. 
+ 
+ 
+Risk 4 - Authentication and authorization vulnerabilities 
+ 
+Security presents another critical risk, particularly concerning authentication and access 
+control. Improper handling of authentication tokens or backend route validation could 
+expose sensitive repository data or allow unauthorized access to analytics resu lts. Such 
+vulnerabilities could compromise data confidentiality and system integrity. To reduce this 
+risk, secure JWT -based authentication is implemented with proper token validation and 
+expiration handling. Sensitive credentials, including API keys and secret tokens, are stored 
+securely using environment variables rather than hard-coded configurations. Furthermore, 
+strict role-based access control is enforced on backend routes to ensure that users can only 
+access resources permitted by their assigned role.  These measures collectively strengthen 
+system security and protect academic data from unauthorized exposure. 
+ 
+ 
+ 
+ 
+ 
+ 
+
+14 
+ 
+7 References 
+ 
+[1] P. H. Russell, C. S. Sadowski, and C. B. Lopes, “A large-scale analysis of bioinformatics 
+code on GitHub,” PLOS ONE, vol. 13, no. 10, 2018, Art. no. e0205898. 
+ 
+[2] N. D. Raiffaza, et al., “Understanding the Trends of Developer Contributions in Open 
+Source Software,” Jurnal Teknologi Informasi dan Ilmu Komputer (JUTIF), 2024. 
+ 
+[3] V. Cosentino, J. L. Cánovas Izquierdo, and J. Cabot, “A systematic mapping study of 
+software development with GitHub,” IEEE Access, vol. 5, pp. 7173–7192, 2017. 
+ 
+[4] J. Tsay, L. Dabbish, and J. Herbsleb, “Influence of social and technical factors for 
+evaluating contribution in GitHub,” in Proc. 36th Int. Conf. Software Engineering (ICSE), 
+2014, pp. 356–366. 
+ 
+[5] B. Vasilescu, Y. Yu, H. Wang, P. Devanbu, and V. Filkov, “Quality and productivity 
+outcomes relating to continuous integration in GitHub,” in Proc. 10th Joint Meeting on 
+Foundations of Software Engineering (ESEC/FSE), 2015, pp. 805–816. 
+ 
+[6] R. Goyal, E. E. Schulte, and J. Czerwonka, “Identifying unusual commits on GitHub,” 
+Journal of Software: Evolution and Process, vol. 30, no. 1, 2018. 
+ 
+[7] C. Matthies, R. Teusner, and A. Schill, “Beyond surveys: Analyzing software 
+development artifacts to assess teaching efforts,” arXiv preprint arXiv:1807.02400, 2018. 
+ 
+[8] I. Amit and D. G. Feitelson, “The corrective commit probability code quality metric,” 
+arXiv preprint arXiv:2007.10912, 2020. 
+ 
+[9] P. C. Rigby and M.-A. Storey, “Understanding broadcast based peer review on open 
+source software projects,” in Proc. 33rd Int. Conf. Software Engineering (ICSE), 2011, pp. 
+541–550. 
+ 
+[10] L. Hattori and M. Lanza, “On the nature of commits,” in Proc. 23rd IEEE/ACM Int. 
+Conf. Automated Software Engineering (ASE), 2008, pp. 63–71. 
+ 
+[11] J. Eyolfson, L. Tan, and P. Lam, “Do time of day and developer experience affect 
+commit bugginess?” in Proc. 8th Working Conf. Mining Software Repositories (MSR), 2011, 
+pp. 153–162. 
+ 
+[12] P. Blikstein, “Using learning analytics to assess students’ behavior in open-ended 
+programming tasks,” in Proc. 1st Int. Conf. Learning Analytics and Knowledge (LAK), 2011, 
+pp. 110–116. 
+ 
+[13] J. Moon and S. Yoon, “Analyzing student programming behavior using repository 
+mining,” in Proc. IEEE Int. Conf. Teaching, Assessment, and Learning for Engineering 
+(TALE), 2017. 

@@ -1,0 +1,114 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  CONVENOR
+  STUDENT
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role
+  modules   Module[]
+  createdAt DateTime @default(now())
+  isVerified Boolean @default(false)
+  emailOTP String?
+  otpExpiry DateTime?
+}
+
+model Module {
+  id          Int      @id @default(autoincrement())
+  name        String
+  year        String
+
+  minExpectedCommits   Int     @default(3)
+  inactivityDays       Int     @default(7)
+  smallCommitThreshold Int     @default(5)
+
+  convenor    User     @relation(fields: [convenorId], references: [id], onDelete: Cascade)
+  convenorId  Int
+  groups      Group[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Group {
+  id        Int       @id @default(autoincrement())
+  name      String
+  module    Module    @relation(fields: [moduleId], references: [id])
+  moduleId  Int
+  repo      Repository?
+  students  Student[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Repository {
+  id        Int      @id @default(autoincrement())
+  name      String
+  url       String
+  platform   String   // "GITHUB" or "GITLAB"
+  githubId  String?   // Optional for future API integration
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId   Int     @unique
+  commits   Commit[]
+
+  // (CACHED OVERVIEW)
+  defaultBranch   String?
+  visibility      String?
+  totalCommits    Int?
+  lastCommitDate  DateTime?
+  lastSyncedAt    DateTime?
+
+  createdAt  DateTime @default(now())
+}
+
+model Student {
+  id        Int       @id @default(autoincrement())
+  name      String
+  universityId String
+  group     Group     @relation(fields: [groupId], references: [id])
+  groupId   Int
+  identities IdentityMapping[]
+}
+
+model IdentityMapping {
+  id          Int      @id @default(autoincrement())
+  gitUsername String
+  gitEmail    String
+  student     Student  @relation(fields: [studentId], references: [id])
+  studentId   Int
+}
+
+model Commit {
+  id          Int      @id @default(autoincrement())
+  sha         String   @unique
+  message     String
+  authorName  String
+  authorEmail String
+  timestamp   DateTime
+  additions   Int
+  deletions   Int
+  branch      String
+  repository  Repository @relation(fields: [repositoryId], references: [id])
+  repositoryId Int
+
+  isLowQuality       Boolean @default(false)
+  lowQualityReason   String?
+  isGenericMessage   Boolean @default(false)
+  isSmallCommit      Boolean @default(false)
+  isWhitespaceOnly   Boolean @default(false)
+  qualityScore       Int?
+
+  createdAt DateTime @default(now())
+}
