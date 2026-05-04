@@ -1,0 +1,131 @@
+@baseUrl = http://localhost:5000/api
+@convenorEmail = vaishnavilatey21@gmail.com
+@convenorPassword = Vaishnavi@2222
+@moduleId = 7
+@namespacePathJson = null
+@groupId = 1
+
+### 1) Login as Convenor (saves token automatically)
+# @name convenorLogin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{convenorEmail}}",
+  "password": "{{convenorPassword}}"
+}
+
+### 2) Verify token + list your modules
+GET {{baseUrl}}/modules
+Authorization: Bearer {{convenorLogin.response.body.token}}
+
+### 3) DRY RUN (safe: no DB write, no GitLab create)
+POST {{baseUrl}}/modules/{{moduleId}}/auto-provision-gitlab
+Authorization: Bearer {{convenorLogin.response.body.token}}
+Content-Type: application/json
+
+{
+  "students": [
+    {
+      "name": "Student 1",
+      "universityId": "u001",
+      "gitUsername": "gitlab_user_1",
+      "gitEmail": "student1@example.com"
+    },
+    {
+      "name": "Student 2",
+      "universityId": "u002",
+      "gitUsername": "gitlab_user_2",
+      "gitEmail": "student2@example.com"
+    },
+    {
+      "name": "Student 3",
+      "universityId": "u003",
+      "gitUsername": "gitlab_user_3",
+      "gitEmail": "student3@example.com"
+    },
+    {
+      "name": "Student 4",
+      "universityId": "u004",
+      "gitUsername": "gitlab_user_4",
+      "gitEmail": "student4@example.com"
+    },
+    {
+      "name": "Student 5",
+      "universityId": "u005",
+      "gitUsername": "gitlab_user_5",
+      "gitEmail": "student5@example.com"
+    }
+  ],
+  "groupSize": 4,
+  "groupPrefix": "Group",
+  "projectPrefix": "Group-module",
+  "namespacePath": {{namespacePathJson}},
+  "visibility": "private",
+  "accessLevel": "DEVELOPER",
+  "initializeWithReadme": true,
+  "allowExistingGroups": true,
+  "dryRun": true
+}
+
+### 4) REAL RUN (creates groups + GitLab projects + member assignments)
+POST {{baseUrl}}/modules/{{moduleId}}/auto-provision-gitlab
+Authorization: Bearer {{convenorLogin.response.body.token}}
+Content-Type: application/json
+
+{
+  "students": [
+    {
+      "name": "Student 1",
+      "universityId": "u001",
+      "gitUsername": "gitlab_user_1",
+      "gitEmail": "student1@example.com"
+    },
+    {
+      "name": "Student 2",
+      "universityId": "u002",
+      "gitUsername": "gitlab_user_2",
+      "gitEmail": "student2@example.com"
+    },
+    {
+      "name": "Student 3",
+      "universityId": "u003",
+      "gitUsername": "gitlab_user_3",
+      "gitEmail": "student3@example.com"
+    },
+    {
+      "name": "Student 4",
+      "universityId": "u004",
+      "gitUsername": "gitlab_user_4",
+      "gitEmail": "student4@example.com"
+    },
+    {
+      "name": "Student 5",
+      "universityId": "u005",
+      "gitUsername": "gitlab_user_5",
+      "gitEmail": "student5@example.com"
+    }
+  ],
+  "groupSize": 4,
+  "groupPrefix": "Group",
+  "projectPrefix": "Group-module",
+  "namespacePath": {{namespacePathJson}},
+  "visibility": "private",
+  "accessLevel": "DEVELOPER",
+  "initializeWithReadme": true,
+  "allowExistingGroups": true,
+  "dryRun": false
+}
+
+### 5) Check groups created for this module
+# @name moduleGroups
+GET {{baseUrl}}/groups/module/{{moduleId}}
+Authorization: Bearer {{convenorLogin.response.body.token}}
+
+### 6) Check repository for first group from request 5 (auto)
+GET {{baseUrl}}/repositories/{{moduleGroups.response.body[0].id}}
+Authorization: Bearer {{convenorLogin.response.body.token}}
+
+### 7) Check repository for a specific group (manual @groupId)
+GET {{baseUrl}}/repositories/{{groupId}}
+Authorization: Bearer {{convenorLogin.response.body.token}}

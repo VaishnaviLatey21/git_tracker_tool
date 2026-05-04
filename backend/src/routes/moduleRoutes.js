@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const moduleController = require("../controllers/moduleController");
+const provisioningController = require("../controllers/provisioningController");
 const { authenticate } = require("../middleware/authMiddleware");
 const { authorize } = require("../middleware/roleMiddleware");
 
@@ -33,6 +34,13 @@ router.get(
   authenticate,
   authorize(["CONVENOR"]),
   moduleController.getOverview
+);
+
+router.post(
+  "/:id/auto-provision-gitlab",
+  authenticate,
+  authorize(["CONVENOR"]),
+  provisioningController.autoCreateGroupsAndProvisionGitLab
 );
 
 router.put(

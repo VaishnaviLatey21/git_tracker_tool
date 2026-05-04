@@ -8,6 +8,7 @@ const groupRoutes = require("./routes/groupRoutes");
 const repositoryRoutes = require("./routes/repositoryRoutes");
 const masterRoutes = require("./routes/masterRoutes");
 const reportRoutes = require("./routes/reportRoutes");
+const adminRoutes = require("./routes/adminRoutes");
 
 
 
@@ -22,6 +23,7 @@ app.use("/api/groups", groupRoutes);
 app.use("/api/repositories", repositoryRoutes);
 app.use("/api/master", masterRoutes);
 app.use("/api/reports", reportRoutes);
+app.use("/api/admin", adminRoutes);
 
 
 

@@ -33,12 +33,7 @@ exports.register = async (req, res) => {
     // 4. Generate 6-digit OTP & expiry
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    await sendOTPEmail(email, otp);
-    res.status(201).json({
-      message: 'OTP sent to your email. Please verify within 10 minutes.'
-    });
-
-    // 5. Create new user
+    // 5. Create new user (unverified until OTP validation)
     await prisma.user.create({
       data: {
         name,
@@ -50,12 +45,62 @@ exports.register = async (req, res) => {
       },
     });
 
-
+    await sendOTPEmail(email, otp);
     res.status(201).json({
-      message: "Registered successfully. Please verify OTP sent to your email within 10 minutes.",
+      message:
+        "Registered successfully. Please verify OTP sent to your email within 10 minutes.",
     });
   } catch (error) {
     res.status(500).json({ message: "Registration failed. Email not sent." });
+  }
+};
+
+// ADMIN REGISTER (separate route + secret key gate)
+exports.adminRegister = async (req, res) => {
+  try {
+    const { name, email, password, adminKey } = req.body;
+
+    if (!name || !email || !password || !adminKey) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    if (!process.env.ADMIN_SIGNUP_KEY) {
+      return res
+        .status(500)
+        .json({ message: "Admin signup is not configured on server" });
+    }
+
+    if (adminKey !== process.env.ADMIN_SIGNUP_KEY) {
+      return res.status(403).json({ message: "Invalid admin signup key" });
+    }
+
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existingUser) {
+      return res.status(400).json({ message: "User already exists" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+
+    await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        role: "ADMIN",
+        isVerified: true,
+        emailOTP: null,
+        otpExpiry: null,
+      },
+    });
+
+    return res.status(201).json({
+      message: "Admin account created successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
   }
 };
 

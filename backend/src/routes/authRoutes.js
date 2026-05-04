@@ -8,6 +8,7 @@ const { authorize } = require("../middleware/roleMiddleware");
 
 // PUBLIC ROUTES
 router.post("/register", authController.register);
+router.post("/admin/register", authController.adminRegister);
 router.post("/login", authController.login);
 router.post("/verify-otp", authController.verifyOTP);
 

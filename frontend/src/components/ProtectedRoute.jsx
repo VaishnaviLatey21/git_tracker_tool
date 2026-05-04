@@ -5,10 +5,17 @@ import { AuthContext } from "../context/AuthContext";
 const ProtectedRoute = ({ children, role }) => {
   const { user } = useContext(AuthContext);
 
-  if (!user) return <Navigate to="/login" />;
+  const allowedRoles = role ? (Array.isArray(role) ? role : [role]) : null;
+  const isAdminGate = allowedRoles?.includes("ADMIN");
 
-  if (role && user.role !== role) {
-    return <Navigate to="/not-found" />;
+  if (!user) {
+    return <Navigate to={isAdminGate ? "/admin/login" : "/login"} replace />;
+  }
+
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    if (user.role === "ADMIN") return <Navigate to="/admin" replace />;
+    if (user.role === "CONVENOR") return <Navigate to="/convenor" replace />;
+    return <Navigate to="/student" replace />;
   }
 
   return children;

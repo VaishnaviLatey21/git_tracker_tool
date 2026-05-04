@@ -2,6 +2,9 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 const { Parser } = require("json2csv");
 const PDFDocument = require("pdfkit");
+const { parseRepositoryUrl } = require("../utils/repoParser");
+const { fetchGitHubRepoData } = require("../services/githubService");
+const { fetchGitLabRepoData } = require("../services/gitlabService");
 const {
   fetchRepositoryContributorsWithIdentity,
   fetchStoredRepositoryContributorsWithIdentity,
@@ -14,7 +17,38 @@ const extractModuleConfig = (module) => ({
   smallCommitThreshold: module?.smallCommitThreshold || 5,
 });
 
-const generateReportData = async (groupId, convenorId) => {
+const getRemoteTotalCommits = async (repository) => {
+  try {
+    const { baseUrl, owner, repo } = parseRepositoryUrl(repository.url);
+    const platform = (repository.platform || "").toUpperCase();
+
+    const overview =
+      platform === "GITHUB"
+        ? await fetchGitHubRepoData(owner, repo)
+        : await fetchGitLabRepoData(baseUrl, owner, repo);
+
+    const total = Number(overview?.totalCommits || 0);
+    return Number.isFinite(total) && total >= 0 ? total : null;
+  } catch (_error) {
+    return null;
+  }
+};
+
+const shouldRefreshFromRemote = async (
+  repository,
+  storedCommitCount,
+  forceRefresh
+) => {
+  if (forceRefresh) return true;
+  if (!storedCommitCount) return true;
+
+  const remoteTotal = await getRemoteTotalCommits(repository);
+  if (remoteTotal == null) return false;
+
+  return remoteTotal > storedCommitCount;
+};
+
+const generateReportData = async (groupId, convenorId, forceRefresh = false) => {
   const group = await prisma.group.findFirst({
     where: {
       id: parseInt(groupId, 10),
@@ -46,7 +80,13 @@ const generateReportData = async (groupId, convenorId) => {
 
   let mappedContributors = [];
 
-  if (storedCommitCount > 0) {
+  const shouldRefresh = await shouldRefreshFromRemote(
+    group.repo,
+    storedCommitCount,
+    forceRefresh
+  );
+
+  if (storedCommitCount > 0 && !shouldRefresh) {
     ({ mappedContributors } = await fetchStoredRepositoryContributorsWithIdentity(
       prisma,
       group.repo.id,
@@ -99,7 +139,15 @@ const generateReportData = async (groupId, convenorId) => {
 
 exports.generateGroupReport = async (req, res) => {
   try {
-    const report = await generateReportData(req.params.groupId, req.user.id);
+    const forceRefresh =
+      String(req.query.refresh || "").toLowerCase() === "true" ||
+      String(req.query.refresh || "") === "1";
+
+    const report = await generateReportData(
+      req.params.groupId,
+      req.user.id,
+      forceRefresh
+    );
     res.json(report);
   } catch (error) {
     console.error("Generate report error:", error);

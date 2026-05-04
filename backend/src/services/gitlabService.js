@@ -4,11 +4,19 @@ const { analyzeCommitPatterns } = require("../utils/commitPatternAnalyzer");
 
 const PER_PAGE = 100;
 const DEFAULT_TIMEOUT_MS = 30000;
+const API_VERSION_PATH = "/api/v4";
 
 const normalizeBaseUrl = (value = "") =>
   String(value || "").trim().replace(/\/+$/, "");
 
-const getConfiguredBaseUrl = () => normalizeBaseUrl(process.env.GITLAB_BASE_URL);
+const toApiBaseUrl = (value = "") => {
+  const normalized = normalizeBaseUrl(value);
+  if (!normalized) return "";
+  if (normalized.endsWith(API_VERSION_PATH)) return normalized;
+  return `${normalized}${API_VERSION_PATH}`;
+};
+
+const getConfiguredBaseUrl = () => toApiBaseUrl(process.env.GITLAB_BASE_URL);
 
 const getGitLabToken = (baseUrl = "") => {
   if (baseUrl.includes("campus.cs.le.ac.uk")) {
@@ -18,7 +26,7 @@ const getGitLabToken = (baseUrl = "") => {
 };
 
 const createGitLabClient = (baseUrl) => {
-  const resolvedBaseUrl = normalizeBaseUrl(baseUrl) || getConfiguredBaseUrl();
+  const resolvedBaseUrl = toApiBaseUrl(baseUrl) || getConfiguredBaseUrl();
   if (!resolvedBaseUrl) {
     throw new Error("GitLab base URL is not configured");
   }
@@ -35,7 +43,7 @@ const createGitLabClient = (baseUrl) => {
   }
 
   return axios.create({
-    baseURL: `${resolvedBaseUrl}/api/v4`,
+    baseURL: resolvedBaseUrl,
     headers,
     timeout: DEFAULT_TIMEOUT_MS,
   });

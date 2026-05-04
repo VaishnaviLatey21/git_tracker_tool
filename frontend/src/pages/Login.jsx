@@ -20,7 +20,8 @@ function Login() {
       const res = await axios.post("/auth/login", { email, password });
       login(res.data);
 
-      if (res.data.user.role === "CONVENOR") navigate("/convenor");
+      if (res.data.user.role === "ADMIN") navigate("/admin");
+      else if (res.data.user.role === "CONVENOR") navigate("/convenor");
       else navigate("/student");
     } catch (err) {
       setError("Login failed. Please check your credentials.");

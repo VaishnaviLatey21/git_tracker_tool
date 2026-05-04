@@ -10,7 +10,10 @@ const {
   persistContributorCommits,
 } = require("../services/repositoryAnalyticsService");
 
-const parseGroupId = (value) => parseInt(value, 10);
+const parseGroupId = (value) => {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+};
 
 const getGroupOwnedByConvenor = async (groupId, convenorId) =>
   prisma.group.findFirst({
@@ -60,6 +63,37 @@ const extractModuleConfig = (module) => ({
   minExpectedCommits: module?.minExpectedCommits || 3,
   smallCommitThreshold: module?.smallCommitThreshold || 5,
 });
+
+const getRemoteTotalCommits = async (repository) => {
+  try {
+    const { baseUrl, owner, repo } = parseRepositoryUrl(repository.url);
+    const platform = (repository.platform || "").toUpperCase();
+
+    const overview =
+      platform === "GITHUB"
+        ? await fetchGitHubRepoData(owner, repo)
+        : await fetchGitLabRepoData(baseUrl, owner, repo);
+
+    const total = Number(overview?.totalCommits || 0);
+    return Number.isFinite(total) && total >= 0 ? total : null;
+  } catch (_error) {
+    return null;
+  }
+};
+
+const shouldRefreshFromRemote = async (
+  repository,
+  storedCommitCount,
+  forceRefresh
+) => {
+  if (forceRefresh) return true;
+  if (!storedCommitCount) return true;
+
+  const remoteTotal = await getRemoteTotalCommits(repository);
+  if (remoteTotal == null) return false;
+
+  return remoteTotal > storedCommitCount;
+};
 
 // CREATE OR UPDATE REPOSITORY
 exports.linkRepository = async (req, res) => {
@@ -122,6 +156,10 @@ exports.linkRepository = async (req, res) => {
 exports.getRepositoryByGroup = async (req, res) => {
   try {
     const groupId = parseGroupId(req.params.groupId);
+    if (!groupId) {
+      return res.status(400).json({ message: "Invalid group id" });
+    }
+
     const group = await getGroupOwnedByConvenor(groupId, req.user.id);
 
     if (!group) {
@@ -142,6 +180,10 @@ exports.getRepositoryByGroup = async (req, res) => {
 exports.deleteRepository = async (req, res) => {
   try {
     const groupId = parseGroupId(req.params.groupId);
+    if (!groupId) {
+      return res.status(400).json({ message: "Invalid group id" });
+    }
+
     const repository = await getRepositoryOwnedByConvenor(groupId, req.user.id);
 
     if (!repository) {
@@ -168,6 +210,10 @@ exports.deleteRepository = async (req, res) => {
 exports.getRepositoryOverview = async (req, res) => {
   try {
     const groupId = parseGroupId(req.params.groupId);
+    if (!groupId) {
+      return res.status(400).json({ message: "Invalid group id" });
+    }
+
     const repository = await getRepositoryOwnedByConvenor(groupId, req.user.id);
 
     if (!repository) {
@@ -223,6 +269,10 @@ exports.getRepositoryOverview = async (req, res) => {
 exports.getRepositoryContributors = async (req, res) => {
   try {
     const groupId = parseGroupId(req.params.groupId);
+    if (!groupId) {
+      return res.status(400).json({ message: "Invalid group id" });
+    }
+
     const forceRefresh =
       String(req.query.refresh || "").toLowerCase() === "true" ||
       String(req.query.refresh || "") === "1";
@@ -240,7 +290,13 @@ exports.getRepositoryContributors = async (req, res) => {
       where: { repositoryId: repository.id },
     });
 
-    if (!forceRefresh && storedCommitCount > 0) {
+    const shouldRefresh = await shouldRefreshFromRemote(
+      repository,
+      storedCommitCount,
+      forceRefresh
+    );
+
+    if (!shouldRefresh && storedCommitCount > 0) {
       const { mappedContributors } =
         await fetchStoredRepositoryContributorsWithIdentity(
           prisma,
@@ -281,6 +337,10 @@ exports.getRepositoryContributors = async (req, res) => {
 exports.getConsolidatedCommits = async (req, res) => {
   try {
     const groupId = parseGroupId(req.params.groupId);
+    if (!groupId) {
+      return res.status(400).json({ message: "Invalid group id" });
+    }
+
     const forceRefresh =
       String(req.query.refresh || "").toLowerCase() === "true" ||
       String(req.query.refresh || "") === "1";
@@ -298,7 +358,13 @@ exports.getConsolidatedCommits = async (req, res) => {
       where: { repositoryId: repository.id },
     });
 
-    if (!forceRefresh && storedCommitCount > 0) {
+    const shouldRefresh = await shouldRefreshFromRemote(
+      repository,
+      storedCommitCount,
+      forceRefresh
+    );
+
+    if (!shouldRefresh && storedCommitCount > 0) {
       const { mappedContributors } =
         await fetchStoredRepositoryContributorsWithIdentity(
           prisma,
