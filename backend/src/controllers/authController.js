@@ -6,7 +6,7 @@ const sendOTPEmail = require("../utils/sendVerificationEmail");
 
 const prisma = new PrismaClient();
 
-const SALT_ROUNDS = parseInt(process.env.BCRYPT_SALT_ROUNDS);
+const SALT_ROUNDS = Number.parseInt(process.env.BCRYPT_SALT_ROUNDS, 10) || 10;
 
 // REGISTER (role-based)
 exports.register = async (req, res) => {
@@ -202,5 +202,147 @@ exports.getCurrentUser = async (req, res) => {
     res.json(user);
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+// FORGOT PASSWORD - send OTP
+exports.forgotPassword = async (req, res) => {
+  try {
+    const email = String(req.body?.email || "").trim();
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true, email: true },
+    });
+
+    if (user) {
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      await prisma.user.update({
+        where: { email },
+        data: {
+          emailOTP: otp,
+          otpExpiry: new Date(Date.now() + 10 * 60 * 1000),
+        },
+      });
+
+      await sendOTPEmail(email, otp);
+    }
+
+    return res.json({
+      message:
+        "If an account exists with this email, a reset OTP has been sent.",
+    });
+  } catch (error) {
+    return res.status(500).json({ message: "Failed to process forgot password" });
+  }
+};
+
+// RESET PASSWORD - verify OTP and set new password
+exports.resetPassword = async (req, res) => {
+  try {
+    const email = String(req.body?.email || "").trim();
+    const otp = String(req.body?.otp || "").trim();
+    const newPassword = String(req.body?.newPassword || "");
+
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({ message: "Email, OTP and new password are required" });
+    }
+
+    if (newPassword.length < 8) {
+      return res
+        .status(400)
+        .json({ message: "Password must be at least 8 characters long" });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        emailOTP: true,
+        otpExpiry: true,
+      },
+    });
+
+    if (!user || !user.emailOTP) {
+      return res.status(400).json({ message: "Invalid reset request" });
+    }
+
+    if (user.emailOTP !== otp) {
+      return res.status(400).json({ message: "Invalid OTP" });
+    }
+
+    if (!user.otpExpiry || new Date() > user.otpExpiry) {
+      return res.status(400).json({ message: "OTP expired" });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
+
+    await prisma.user.update({
+      where: { email },
+      data: {
+        password: hashedPassword,
+        emailOTP: null,
+        otpExpiry: null,
+      },
+    });
+
+    return res.json({ message: "Password reset successful" });
+  } catch (error) {
+    return res.status(500).json({ message: "Failed to reset password" });
+  }
+};
+
+// CHANGE PASSWORD - authenticated user flow
+exports.changePassword = async (req, res) => {
+  try {
+    const currentPassword = String(req.body?.currentPassword || "");
+    const newPassword = String(req.body?.newPassword || "");
+
+    if (!currentPassword || !newPassword) {
+      return res
+        .status(400)
+        .json({ message: "Current password and new password are required" });
+    }
+
+    if (newPassword.length < 8) {
+      return res
+        .status(400)
+        .json({ message: "New password must be at least 8 characters long" });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { id: true, password: true },
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const validCurrent = await bcrypt.compare(currentPassword, user.password);
+    if (!validCurrent) {
+      return res.status(400).json({ message: "Current password is incorrect" });
+    }
+
+    const isSamePassword = await bcrypt.compare(newPassword, user.password);
+    if (isSamePassword) {
+      return res
+        .status(400)
+        .json({ message: "New password must be different from current password" });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
+
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { password: hashedPassword },
+    });
+
+    return res.json({ message: "Password updated successfully" });
+  } catch (error) {
+    return res.status(500).json({ message: "Failed to change password" });
   }
 };

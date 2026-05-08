@@ -102,6 +102,15 @@ function Login() {
             </button>
           </div>
 
+          <div className="mb-5 text-right">
+            <span
+              onClick={() => navigate("/forgot-password")}
+              className="cursor-pointer text-sm text-teal-200 hover:underline"
+            >
+              Forgot password?
+            </span>
+          </div>
+
           <button
             type="submit"
             className="w-full py-2 text-lg text-white rounded-xl font-semibold bg-gradient-to-r from-teal-400 to-blue-500 hover:opacity-90 transition duration-300 shadow-lg" >

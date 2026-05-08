@@ -9,6 +9,8 @@ import {
   Layers3,
   Link2,
   Link2Off,
+  MessageSquarePlus,
+  SendHorizontal,
   ShieldAlert,
   Users,
   UsersRound,
@@ -161,6 +163,12 @@ function Overview() {
   const [repoForm, setRepoForm] = useState(initialRepoForm);
 
   const [loading, setLoading] = useState(true);
+  const [supportThreads, setSupportThreads] = useState([]);
+  const [supportSubject, setSupportSubject] = useState("");
+  const [supportMessage, setSupportMessage] = useState("");
+  const [supportSending, setSupportSending] = useState(false);
+  const [supportError, setSupportError] = useState("");
+  const [supportSuccess, setSupportSuccess] = useState("");
 
   useEffect(() => {
     const loadInitialData = async () => {
@@ -243,6 +251,21 @@ function Overview() {
     }
   };
 
+  const loadSupportThreads = async () => {
+    try {
+      const response = await axios.get("/support/convenor/threads");
+      setSupportThreads(response.data || []);
+    } catch (error) {
+      console.error("Failed to load support threads:", error);
+    }
+  };
+
+  useEffect(() => {
+    loadSupportThreads();
+    const intervalId = window.setInterval(loadSupportThreads, 30000);
+    return () => window.clearInterval(intervalId);
+  }, []);
+
   const selectedGroup = useMemo(
     () => groups.find((group) => String(group.id) === selectedGroupId),
     [groups, selectedGroupId]
@@ -323,6 +346,41 @@ function Overview() {
       link.remove();
     } catch (error) {
       console.error("PDF download failed:", error);
+    }
+  };
+
+  const submitSupportQuestion = async (event) => {
+    event.preventDefault();
+    const message = supportMessage.trim();
+    if (!message) {
+      setSupportError("Please enter your message before sending.");
+      setSupportSuccess("");
+      return;
+    }
+
+    setSupportSending(true);
+    setSupportError("");
+    setSupportSuccess("");
+
+    try {
+      const subject =
+        supportSubject.trim() ||
+        (selectedGroup ? `Question about ${selectedGroup.name}` : "General Question");
+
+      await axios.post("/support/convenor/questions", {
+        subject,
+        message,
+      });
+
+      setSupportSubject("");
+      setSupportMessage("");
+      setSupportSuccess("Question sent to admin. You will receive replies in notifications and chat.");
+      await loadSupportThreads();
+    } catch (error) {
+      console.error("Failed to submit support question:", error);
+      setSupportError(error.response?.data?.message || "Failed to send your question");
+    } finally {
+      setSupportSending(false);
     }
   };
 
@@ -610,6 +668,111 @@ function Overview() {
                 />
               </AreaChart>
             </ResponsiveContainer>
+          </div>
+        </div>
+      </section>
+
+      <section className="conv-card">
+        <div className="conv-panel-header">
+          <div>
+            <p className="conv-kicker">Message Admin</p>
+            <h2 className="conv-panel-title">Convenor Support Desk</h2>
+            <p className="conv-panel-subtitle">
+              Ask project or analytics questions and track responses from admin.
+            </p>
+          </div>
+          <span className="conv-chip">
+            <MessageSquarePlus className="h-3.5 w-3.5" />
+            Live Support
+          </span>
+        </div>
+
+        <div className="conv-two-col">
+          <form onSubmit={submitSupportQuestion} className="conv-stack">
+            <label className="conv-field">
+              <span className="conv-label">Subject (optional)</span>
+              <input
+                type="text"
+                value={supportSubject}
+                onChange={(event) => setSupportSubject(event.target.value)}
+                className="conv-input"
+                placeholder="Example: Group03 commit mismatch"
+              />
+            </label>
+
+            <label className="conv-field">
+              <span className="conv-label">Message</span>
+              <textarea
+                value={supportMessage}
+                onChange={(event) => setSupportMessage(event.target.value)}
+                className="conv-textarea"
+                rows={5}
+                placeholder="Describe your issue/question for admin..."
+              />
+            </label>
+
+            {supportError && (
+              <p className="rounded-xl border border-[#f2d4d8] bg-[#fff5f7] px-3 py-2 text-sm text-[#af4d5e]">
+                {supportError}
+              </p>
+            )}
+            {supportSuccess && (
+              <p className="rounded-xl border border-[#d6e9dd] bg-[#f1fbf5] px-3 py-2 text-sm text-[#2f7a50]">
+                {supportSuccess}
+              </p>
+            )}
+
+            <div className="conv-actions">
+              <button
+                type="submit"
+                disabled={supportSending}
+                className="conv-btn primary"
+              >
+                <SendHorizontal className="h-4 w-4" />
+                {supportSending ? "Sending..." : "Send to Admin"}
+              </button>
+            </div>
+          </form>
+
+          <div className="conv-stack">
+            <h3 className="conv-panel-title small">Recent Threads</h3>
+
+            {supportThreads.length === 0 && (
+              <p className="conv-empty subtle">
+                No questions yet. Create your first question from this section.
+              </p>
+            )}
+
+            {supportThreads.slice(0, 5).map((thread) => (
+              <article key={thread.id} className="conv-modal-item">
+                <div className="conv-row">
+                  <h3>{thread.subject}</h3>
+                  <span
+                    className={`conv-badge ${
+                      thread.status === "RESOLVED" ? "success" : "warning"
+                    }`}
+                  >
+                    {thread.status}
+                  </span>
+                </div>
+                <p>
+                  Last update:{" "}
+                  {new Date(thread.lastMessageAt || thread.updatedAt).toLocaleString(
+                    "en-GB",
+                    {
+                      day: "2-digit",
+                      month: "short",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    }
+                  )}
+                </p>
+                <p>
+                  Unread admin replies:{" "}
+                  <strong>{Number(thread.unreadCount || 0)}</strong>
+                </p>
+              </article>
+            ))}
           </div>
         </div>
       </section>

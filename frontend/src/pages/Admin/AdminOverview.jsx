@@ -1,5 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { BarChart3, Database, GitCommitHorizontal, ShieldAlert, Users } from "lucide-react";
+import {
+  BarChart3,
+  BellRing,
+  Database,
+  GitCommitHorizontal,
+  MessageSquare,
+  ShieldAlert,
+  Users,
+} from "lucide-react";
+import { useOutletContext } from "react-router-dom";
 import {
   Bar,
   BarChart,
@@ -35,6 +44,8 @@ const fallbackSummary = {
 };
 
 function AdminOverview() {
+  const { unreadSupportCount = 0, supportNotifications = [], openSupportInbox } =
+    useOutletContext() || {};
   const [summary, setSummary] = useState(fallbackSummary);
   const [loading, setLoading] = useState(true);
 
@@ -187,6 +198,65 @@ function AdminOverview() {
             </p>
           </div>
         </article>
+      </section>
+
+      <section className="rounded-2xl border border-[#d7e1f0] bg-white p-5 shadow-sm">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#7188a9]">
+              Notifications
+            </p>
+            <h3 className="text-xl font-bold text-[#21344e]">
+              Convenor Support Queue
+            </h3>
+          </div>
+          <button
+            type="button"
+            onClick={() => openSupportInbox?.()}
+            className="inline-flex items-center gap-2 rounded-lg border border-[#cedcef] bg-[#eff5ff] px-3 py-2 text-sm font-semibold text-[#365988]"
+          >
+            <MessageSquare className="h-4 w-4" />
+            Open Inbox
+          </button>
+        </div>
+
+        <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#d7e2f2] bg-[#f7faff] px-3 py-1 text-xs font-semibold text-[#4f6787]">
+          <BellRing className="h-3.5 w-3.5" />
+          Unread convenor messages: {unreadSupportCount}
+        </div>
+
+        <div className="space-y-2">
+          {supportNotifications.length === 0 && (
+            <p className="rounded-lg border border-dashed border-[#d7e1f0] bg-[#f9fbff] px-3 py-2 text-sm text-[#5f7698]">
+              No unread messages at the moment.
+            </p>
+          )}
+
+          {supportNotifications.slice(0, 5).map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => openSupportInbox?.(item.threadId)}
+              className="w-full rounded-xl border border-[#dce6f4] bg-[#fafcff] px-3 py-2 text-left transition hover:border-[#a7c0e4] hover:bg-[#f3f8ff]"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-semibold text-[#274164]">{item.threadSubject}</p>
+                <span className="text-[11px] text-[#7d92af]">
+                  {new Date(item.createdAt).toLocaleString("en-GB", {
+                    day: "2-digit",
+                    month: "short",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
+              </div>
+              <p className="mt-1 text-xs font-semibold text-[#5f7899]">
+                {item.convenorName} ({item.convenorEmail})
+              </p>
+              <p className="mt-1 line-clamp-2 text-sm text-[#4f6787]">{item.message}</p>
+            </button>
+          ))}
+        </div>
       </section>
     </div>
   );

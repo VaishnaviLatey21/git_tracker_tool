@@ -9,6 +9,7 @@ const repositoryRoutes = require("./routes/repositoryRoutes");
 const masterRoutes = require("./routes/masterRoutes");
 const reportRoutes = require("./routes/reportRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+const supportRoutes = require("./routes/supportRoutes");
 
 
 
@@ -24,6 +25,7 @@ app.use("/api/repositories", repositoryRoutes);
 app.use("/api/master", masterRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/support", supportRoutes);
 
 
 

@@ -11,11 +11,19 @@ router.post("/register", authController.register);
 router.post("/admin/register", authController.adminRegister);
 router.post("/login", authController.login);
 router.post("/verify-otp", authController.verifyOTP);
+router.post("/forgot-password", authController.forgotPassword);
+router.post("/reset-password", authController.resetPassword);
 
 router.get(
   "/me",
   authenticate,
   authController.getCurrentUser
+);
+
+router.put(
+  "/change-password",
+  authenticate,
+  authController.changePassword
 );
 
 

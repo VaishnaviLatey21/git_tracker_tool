@@ -13,6 +13,11 @@ enum Role {
   STUDENT
 }
 
+enum SupportThreadStatus {
+  OPEN
+  RESOLVED
+}
+
 model User {
   id        Int      @id @default(autoincrement())
   name      String
@@ -24,6 +29,8 @@ model User {
   isVerified Boolean @default(false)
   emailOTP String?
   otpExpiry DateTime?
+  supportThreads SupportThread[] @relation("ConvenorThreads")
+  supportMessages SupportMessage[] @relation("UserSupportMessages")
 }
 
 model Module {
@@ -111,4 +118,29 @@ model Commit {
   qualityScore       Int?
 
   createdAt DateTime @default(now())
+}
+
+model SupportThread {
+  id          Int                 @id @default(autoincrement())
+  convenorId  Int
+  subject     String
+  status      SupportThreadStatus @default(OPEN)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  lastMessageAt DateTime          @default(now())
+  convenor    User                @relation("ConvenorThreads", fields: [convenorId], references: [id], onDelete: Cascade)
+  messages    SupportMessage[]
+}
+
+model SupportMessage {
+  id               Int           @id @default(autoincrement())
+  threadId         Int
+  senderId         Int
+  senderRole       Role
+  message          String
+  createdAt        DateTime      @default(now())
+  isReadByConvenor Boolean       @default(false)
+  isReadByAdmin    Boolean       @default(false)
+  thread           SupportThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  sender           User          @relation("UserSupportMessages", fields: [senderId], references: [id], onDelete: Cascade)
 }
