@@ -3,13 +3,19 @@ import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   Bell,
   BookOpenText,
+  ChartNoAxesColumn,
   CircleHelp,
+  Download,
+  FileText,
+  FolderGit2,
+  GraduationCap,
   LayoutDashboard,
   Layers3,
   LogOut,
   Menu,
   MessageSquareDot,
   Send,
+  Settings2,
   UserRound,
   UsersRound,
   X,
@@ -17,9 +23,17 @@ import {
 import axios from "../api/axios";
 
 const navItems = [
-  { label: "Overview", to: "/convenor", icon: LayoutDashboard },
+  { label: "Dashboard", to: "/convenor", icon: LayoutDashboard },
   { label: "Modules", to: "/convenor/modules", icon: Layers3 },
   { label: "Groups", to: "/convenor/modules", icon: UsersRound },
+  { label: "Repositories", to: "/convenor/modules", icon: FolderGit2 },
+  { label: "Analytics", to: "/convenor/analytics", icon: ChartNoAxesColumn },
+  { label: "Students", to: "/convenor/students", icon: GraduationCap },
+  { label: "Reports", to: "/convenor/reports", icon: FileText },
+  { label: "Exports", to: "/convenor/exports", icon: Download },
+  { label: "Message Admin", to: "/convenor/messages", icon: MessageSquareDot },
+  { label: "Settings", to: "/convenor/settings", icon: Settings2 },
+  { label: "Help", to: "/convenor/help", icon: CircleHelp },
 ];
 
 function FAQModal({ onClose }) {
@@ -47,12 +61,12 @@ function FAQModal({ onClose }) {
               Add repository URL when creating/editing groups, or use Link Repo actions.
             </p>
           </article>
-          <article className="rounded-xl border border-[#e2e9f4] bg-[#f9fbfe] p-3">
+          {/* <article className="rounded-xl border border-[#e2e9f4] bg-[#f9fbfe] p-3">
             <h3 className="font-semibold text-[#2a3c58]">How do I sync latest commits?</h3>
             <p className="mt-1">
               Open Group Summary and use Refresh to fetch latest commit analytics.
             </p>
-          </article>
+          </article> */}
           <article className="rounded-xl border border-[#e2e9f4] bg-[#f9fbfe] p-3">
             <h3 className="font-semibold text-[#2a3c58]">What are flagged students?</h3>
             <p className="mt-1">
@@ -72,26 +86,26 @@ function FAQModal({ onClose }) {
               notifications and chat.
             </p>
           </article>
-          <article className="rounded-xl border border-[#e2e9f4] bg-[#f9fbfe] p-3">
+          {/* <article className="rounded-xl border border-[#e2e9f4] bg-[#f9fbfe] p-3">
             <h3 className="font-semibold text-[#2a3c58]">Can I change inactivity thresholds?</h3>
             <p className="mt-1">
               Yes. Edit module settings to update inactivity days and expected commits.
             </p>
-          </article>
-          <article className="rounded-xl border border-[#e2e9f4] bg-[#f9fbfe] p-3">
+          </article> */}
+          {/* <article className="rounded-xl border border-[#e2e9f4] bg-[#f9fbfe] p-3">
             <h3 className="font-semibold text-[#2a3c58]">Why are some commits not mapped to students?</h3>
             <p className="mt-1">
               Commit author email/username may not be linked yet. Open Group Summary to map
               contributor identities to verified students.
             </p>
-          </article>
-          <article className="rounded-xl border border-[#e2e9f4] bg-[#f9fbfe] p-3">
+          </article> */}
+          {/* <article className="rounded-xl border border-[#e2e9f4] bg-[#f9fbfe] p-3">
             <h3 className="font-semibold text-[#2a3c58]">How often are notifications updated?</h3>
             <p className="mt-1">
               Notification badges refresh automatically and also update immediately when you open
               the chat.
             </p>
-          </article>
+          </article> */}
         </div>
       </div>
     </div>
@@ -477,6 +491,18 @@ function ConvenorLayout() {
   };
 
   const avatar = user?.name?.charAt(0)?.toUpperCase() || "C";
+  const sectionLabel = useMemo(() => {
+    if (location.pathname === "/convenor") return "Dashboard";
+    if (location.pathname.startsWith("/convenor/analytics")) return "Analytics";
+    if (location.pathname.startsWith("/convenor/students")) return "Students";
+    if (location.pathname.startsWith("/convenor/modules")) return "Modules";
+    if (location.pathname.startsWith("/convenor/messages")) return "Message Admin";
+    if (location.pathname.startsWith("/convenor/settings")) return "Settings";
+    if (location.pathname.startsWith("/convenor/reports")) return "Reports";
+    if (location.pathname.startsWith("/convenor/exports")) return "Exports";
+    if (location.pathname.startsWith("/convenor/help")) return "Help";
+    return "Dashboard";
+  }, [location.pathname]);
 
   const loadThreads = async () => {
     try {
@@ -592,23 +618,23 @@ function ConvenorLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f3f7fc]">
-      <div className="mx-auto flex max-w-[1600px] gap-0">
+    <div className="min-h-screen bg-[#f5f7fb]">
+      <div className="mx-auto flex max-w-[1760px] gap-0">
         <aside
-          className={`fixed inset-y-0 left-0 z-40 w-[260px] border-r border-[#22395f] bg-[#0f213f] text-white transition-transform duration-300 md:static md:translate-x-0 ${
+          className={`fixed inset-y-0 left-0 z-40 w-[248px] border-r border-[#22395f] bg-gradient-to-b from-[#102541] via-[#122e55] to-[#0f2747] text-white transition-transform duration-300 md:static md:translate-x-0 ${
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
           }`}
         >
           <div className="flex h-full flex-col">
-            <div className="border-b border-white/10 px-6 py-6">
-              <p className="flex items-center gap-3 text-xl font-bold tracking-tight">
-                <BookOpenText className="h-6 w-6 text-[#8dc4ff]" />
+            <div className="border-b border-white/10 px-5 py-5">
+              <p className="flex items-center gap-2.5 text-xl font-bold tracking-tight">
+                <BookOpenText className="h-5.5 w-5.5 text-[#8dc4ff]" />
                 Git Tracker
               </p>
-              <p className="mt-1 text-xs text-[#a6bddf]">Convenor Dashboard</p>
+              <p className="mt-1 text-xs text-[#a6bddf]">Convenor Workspace</p>
             </div>
 
-            <nav className="flex-1 space-y-1 px-3 py-5">
+            <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const active =
@@ -619,10 +645,10 @@ function ConvenorLayout() {
                   <NavLink
                     key={item.label}
                     to={item.to}
-                    className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition ${
+                    className={`flex items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-sm font-semibold transition ${
                       active
-                        ? "bg-[#244a7a] text-white"
-                        : "text-[#c9d7ee] hover:bg-white/10 hover:text-white"
+                        ? "bg-[#2f67ae] text-white shadow-lg shadow-[#1f4f88]/40"
+                        : "text-[#d4e0f3] hover:bg-white/10 hover:text-white"
                     }`}
                     onClick={() => setSidebarOpen(false)}
                   >
@@ -647,7 +673,7 @@ function ConvenorLayout() {
         </aside>
 
         <div className="min-h-screen flex-1">
-          <header className="sticky top-0 z-30 border-b border-[#dde5f1] bg-white/92 px-4 py-3 backdrop-blur md:px-7">
+          <header className="sticky top-0 z-30 border-b border-[#dde5f1] bg-white px-4 py-3 md:px-7">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <button
@@ -657,14 +683,14 @@ function ConvenorLayout() {
                 >
                   <Menu className="h-4 w-4" />
                 </button>
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-blue-400 to-indigo-500 text-white text-sm font-bold shadow-md">
-                    {avatar}
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[#d5e0ef] bg-[#f1f6ff] text-sm font-bold text-[#2a4f80]">
+                    <BookOpenText className="h-4 w-4" />
                   </div>
-
-                  <p className="text-lg font-semibold text-[#26374f]">
-                    Welcome back, {user?.name || "Convenor"}
-                  </p>
+                  <div>
+                    <p className="text-sm font-semibold text-[#26374f]">Git Tracker Tool</p>
+                    <p className="text-xs text-[#6b82a1]">{sectionLabel}</p>
+                  </div>
                 </div>
               </div>
 
@@ -744,9 +770,12 @@ function ConvenorLayout() {
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#e7eef9] text-xs font-extrabold text-[#2a3f62]">
                       {avatar}
                     </div>
-                    <span className="hidden text-sm font-semibold text-[#344a68] md:inline">
-                      {user?.name || "Convenor"}
-                    </span>
+                    <div className="hidden md:block">
+                      <p className="text-sm font-semibold text-[#344a68]">
+                        {user?.name || "Convenor"}
+                      </p>
+                      <p className="text-[11px] text-[#7b90aa]">Convenor</p>
+                    </div>
                   </button>
 
                   {menuOpen && (

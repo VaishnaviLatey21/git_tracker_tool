@@ -1823,6 +1823,12 @@ body {
   gap: 0.72rem;
 }
 
+.conv-top-filters {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.72rem;
+}
+
 .conv-field {
   display: grid;
   gap: 0.32rem;
@@ -1835,6 +1841,13 @@ body {
   color: #506887;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+.conv-field-help {
+  margin-top: 0.1rem;
+  font-size: 0.74rem;
+  color: #6a83a3;
+  line-height: 1.45;
 }
 
 .conv-input,
@@ -1862,6 +1875,13 @@ body {
 
 .conv-input.search {
   width: min(300px, 100%);
+}
+
+.conv-table-control {
+  min-height: 34px;
+  padding: 0.36rem 0.5rem;
+  font-size: 0.78rem;
+  border-radius: 9px;
 }
 
 .conv-btn {
@@ -2115,6 +2135,114 @@ body {
   font-size: 0.84rem;
   padding: 0.7rem;
   line-height: 1.55;
+}
+
+.conv-validation-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 0.7rem;
+  margin: 0.7rem 0;
+}
+
+.conv-stat-card.compact {
+  border-radius: 13px;
+  padding: 0.58rem;
+  box-shadow: none;
+  border: 1px solid #dbe7f3;
+  background: #fbfdff;
+}
+
+.conv-stat-value.mini {
+  font-size: 1.2rem;
+}
+
+.conv-heatmap-wrap {
+  margin-top: 0.95rem;
+  border-radius: 14px;
+  border: 1px solid #dce8f5;
+  background: #fbfdff;
+  padding: 0.7rem;
+}
+
+.conv-heatmap-table {
+  margin-top: 0.45rem;
+  border-radius: 12px;
+  border: 1px solid #e0e9f6;
+  overflow-x: auto;
+}
+
+.conv-heatmap-head,
+.conv-heatmap-row {
+  display: grid;
+  grid-template-columns: 180px repeat(8, minmax(64px, 1fr));
+  gap: 0.35rem;
+  align-items: center;
+  padding: 0.45rem 0.55rem;
+}
+
+.conv-heatmap-head {
+  background: #f2f7ff;
+  border-bottom: 1px solid #e2ebf6;
+  color: #6b84a2;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 800;
+}
+
+.conv-heatmap-row {
+  border-bottom: 1px solid #edf2fa;
+}
+
+.conv-heatmap-row:last-child {
+  border-bottom: 0;
+}
+
+.conv-heatmap-row .student-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #2f4768;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.conv-heatmap-cell {
+  border-radius: 8px;
+  padding: 0.32rem 0.28rem;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+  color: #27445f;
+}
+
+.conv-heatmap-cell.level-0 {
+  background: #f4f8fe;
+  border-color: #dde7f5;
+  color: #7b91ad;
+}
+
+.conv-heatmap-cell.level-1 {
+  background: #dff0ff;
+  border-color: #b8dafb;
+}
+
+.conv-heatmap-cell.level-2 {
+  background: #bce3ff;
+  border-color: #8bc8f1;
+}
+
+.conv-heatmap-cell.level-3 {
+  background: #89cbff;
+  border-color: #5ca8e2;
+  color: #14395b;
+}
+
+.conv-heatmap-cell.level-4 {
+  background: #49a8f3;
+  border-color: #2d85cd;
+  color: #ffffff;
 }
 
 .conv-empty {
@@ -3156,6 +3284,42 @@ body {
   gap: 0.75rem;
 }
 
+.conv-analytics-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.conv-inline-filters {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.conv-inline-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+  color: #5a7392;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.conv-inline-filter span {
+  letter-spacing: 0.03em;
+}
+
+.conv-input-compact {
+  min-height: 38px;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  padding: 0.35rem 0.48rem;
+  width: 150px;
+}
+
 .conv-chart-box {
   min-height: 360px;
 }
@@ -3273,6 +3437,18 @@ body {
   .conv-contrib-grid {
     grid-template-columns: 1fr;
   }
+
+  .conv-analytics-toolbar {
+    justify-content: flex-start;
+  }
+
+  .conv-validation-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .conv-top-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 760px) {
@@ -3297,6 +3473,10 @@ body {
     height: 36px;
   }
 
+  .conv-input-compact {
+    width: 132px;
+  }
+
   .conv-hero-title {
     font-size: 1.35rem;
   }
@@ -3304,4 +3484,27 @@ body {
   .conv-panel-title {
     font-size: 1.5rem;
   }
+
+  .conv-heatmap-head,
+  .conv-heatmap-row {
+    grid-template-columns: 130px repeat(8, minmax(52px, 1fr));
+    gap: 0.22rem;
+    padding: 0.4rem 0.42rem;
+  }
+
+  .conv-heatmap-cell {
+    font-size: 0.68rem;
+  }
+
+  .conv-top-filters {
+    grid-template-columns: 1fr;
+  }
+}
+
+.conv-input.conv-table-control,
+.conv-select.conv-table-control {
+  min-height: 34px;
+  padding: 0.36rem 0.5rem;
+  font-size: 0.78rem;
+  border-radius: 9px;
 }

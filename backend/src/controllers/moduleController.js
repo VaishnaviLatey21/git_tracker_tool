@@ -1,6 +1,17 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
+const normalizeThreshold = (value, fallback = 0) => {
+    if (value === undefined || value === null || value === "") {
+        return fallback;
+    }
+
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) return fallback;
+
+    return Math.max(0, parsed);
+};
+
 
 // CREATE MODULE
 exports.createModule = async (req, res) => {
@@ -27,9 +38,9 @@ exports.createModule = async (req, res) => {
                 year,
                 convenorId: req.user.id,
 
-                minExpectedCommits: Math.max(0, Number(minExpectedCommits) || 0),
-                inactivityDays: Math.max(0, Number(inactivityDays) || 0),
-                smallCommitThreshold: Math.max(0, Number(smallCommitThreshold) || 0),
+                minExpectedCommits: normalizeThreshold(minExpectedCommits, 0),
+                inactivityDays: normalizeThreshold(inactivityDays, 0),
+                smallCommitThreshold: normalizeThreshold(smallCommitThreshold, 0),
             },
         });
 
@@ -65,7 +76,13 @@ exports.getModules = async (req, res) => {
 exports.updateModule = async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, year } = req.body;
+        const {
+            name,
+            year,
+            minExpectedCommits,
+            inactivityDays,
+            smallCommitThreshold,
+        } = req.body;
 
         // Ensure module belongs to convenor
         const existing = await prisma.module.findFirst({
@@ -80,7 +97,22 @@ exports.updateModule = async (req, res) => {
 
         const updated = await prisma.module.update({
             where: { id: parseInt(id) },
-            data: { name, year },
+            data: {
+                name,
+                year,
+                minExpectedCommits: normalizeThreshold(
+                    minExpectedCommits,
+                    existing.minExpectedCommits
+                ),
+                inactivityDays: normalizeThreshold(
+                    inactivityDays,
+                    existing.inactivityDays
+                ),
+                smallCommitThreshold: normalizeThreshold(
+                    smallCommitThreshold,
+                    existing.smallCommitThreshold
+                ),
+            },
         });
 
         res.json(updated);
@@ -278,8 +310,10 @@ exports.getOverview = async (req, res) => {
         });
 
         let flaggedStudents = 0;
+        let activeStudents = 0;
 
         Object.values(studentMap).forEach((student) => {
+            activeStudents++;
             if (
                 student.lowQuality > 0 ||
                 student.small > 0 ||
@@ -318,6 +352,7 @@ exports.getOverview = async (req, res) => {
             totalGroups,
             repositories,
             flaggedStudents,
+            activeStudents,
             activityTrend,
             riskDistribution,
         });

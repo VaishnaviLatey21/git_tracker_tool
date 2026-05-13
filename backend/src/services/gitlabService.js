@@ -202,6 +202,39 @@ const getUsernameFromIdentity = ({ email, name }) => {
   return slugify(name) || "unknown";
 };
 
+const normalizeIdentity = (value = "") => String(value || "").trim().toLowerCase();
+
+const getContributorKey = (enriched) => {
+  const emailKey = normalizeIdentity(enriched.authorEmail);
+  const nameKey = slugify(enriched.authorName);
+  const usernameKey = slugify(
+    getUsernameFromIdentity({
+      email: enriched.authorEmail,
+      name: enriched.authorName,
+    })
+  );
+
+  const hasReliableEmail =
+    emailKey &&
+    emailKey !== "unknown@example.com" &&
+    !emailKey.includes("no-reply") &&
+    !emailKey.includes("noreply");
+
+  if (hasReliableEmail) {
+    return `email:${emailKey}`;
+  }
+
+  if (usernameKey) {
+    return `username:${usernameKey}|name:${nameKey || "unknown"}`;
+  }
+
+  if (nameKey) {
+    return `name:${nameKey}`;
+  }
+
+  return `sha:${enriched.sha}`;
+};
+
 const enrichGitLabCommit = async (client, projectId, commit, moduleConfig = {}) => {
   const sha = commit.id || commit.short_id;
 
@@ -316,8 +349,7 @@ exports.fetchGitLabContributors = async (
         moduleConfig
       );
 
-      const emailKey = String(enriched.authorEmail || "unknown@example.com").toLowerCase();
-      const contributorKey = emailKey || `${enriched.authorName}:${enriched.sha}`;
+      const contributorKey = getContributorKey(enriched);
 
       if (!contributorsMap.has(contributorKey)) {
         contributorsMap.set(contributorKey, {
@@ -367,6 +399,9 @@ exports.fetchGitLabContributors = async (
           : 0,
         inactivityGaps,
         inactivityFlag: inactivityGaps.length > 0,
+        belowExpectedCommits: !!patterns.belowExpectedCommits,
+        expectedCommitsTarget: patterns.expectedCommitsTarget,
+        actualCommits: patterns.actualCommits,
         deadlineSpike: !!patterns.deadlineSpike,
         commitsByDate: patterns.commitsByDate || {},
       };
@@ -374,5 +409,31 @@ exports.fetchGitLabContributors = async (
   } catch (error) {
     console.error("GitLab Contributor Error:", error.response?.data || error.message || error);
     throw new Error("Failed to fetch GitLab contributor analytics");
+  }
+};
+
+exports.fetchGitLabBranchTipShas = async (baseUrl, owner, repo) => {
+  try {
+    const gitlab = createGitLabClient(baseUrl);
+    const project = await resolveProject(gitlab, owner, repo);
+
+    const branches = await fetchPaginated(
+      gitlab,
+      `/projects/${project.id}/repository/branches`
+    );
+
+    return Array.from(
+      new Set(
+        branches
+          .map((branch) => branch?.commit?.id || branch?.commit?.short_id)
+          .filter(Boolean)
+      )
+    );
+  } catch (error) {
+    console.error(
+      "GitLab Branch Tips Error:",
+      error.response?.data || error.message || error
+    );
+    return [];
   }
 };

@@ -199,6 +199,10 @@ exports.fetchGitHubContributors = async (owner, repo, moduleConfig = {}) => {
           ? ((contributor.totalCommits / totalProjectCommits) * 100).toFixed(1)
           : 0,
         inactivityGaps: patterns.inactivityGaps,
+        inactivityFlag: (patterns.inactivityGaps || []).length > 0,
+        belowExpectedCommits: !!patterns.belowExpectedCommits,
+        expectedCommitsTarget: patterns.expectedCommitsTarget,
+        actualCommits: patterns.actualCommits,
         deadlineSpike: patterns.deadlineSpike,
         commitsByDate: patterns.commitsByDate,
       };

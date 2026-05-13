@@ -3,7 +3,12 @@ import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   Activity,
   Bell,
+  BookOpen,
   CheckCircle2,
+  Cog,
+  FileText,
+  FolderKanban,
+  GitBranch,
   LogOut,
   Menu,
   MessageSquare,
@@ -15,9 +20,14 @@ import {
 import axios from "../api/axios";
 
 const navItems = [
-  { label: "Overview", to: "/admin", icon: Activity },
+  { label: "Dashboard", to: "/admin", icon: Activity },
   { label: "Users", to: "/admin/users", icon: Users },
-  { label: "Roles", to: "/admin/roles", icon: UserCog },
+  { label: "Roles & Permissions", to: "/admin/roles", icon: UserCog },
+  { label: "Modules", to: "/admin/modules", icon: BookOpen },
+  // { label: "Groups", to: "/admin/groups", icon: FolderKanban },
+  // { label: "Repositories", to: "/admin/repositories", icon: GitBranch },
+  { label: "System Settings", to: "/admin/settings", icon: Cog },
+  { label: "Logs & Activity", to: "/admin/logs", icon: FileText },
 ];
 
 const formatRelativeDate = (value) => {
@@ -150,9 +160,14 @@ function AdminLayout() {
   }, [supportChatOpen]);
 
   const sectionLabel = useMemo(() => {
-    if (location.pathname === "/admin") return "System-Wide Analytics";
+    if (location.pathname === "/admin") return "Dashboard";
     if (location.pathname.startsWith("/admin/users")) return "User Management";
-    if (location.pathname.startsWith("/admin/roles")) return "Role Management";
+    if (location.pathname.startsWith("/admin/roles")) return "Roles & Permissions";
+    if (location.pathname.startsWith("/admin/modules")) return "Modules";
+    // if (location.pathname.startsWith("/admin/groups")) return "Groups";
+    // if (location.pathname.startsWith("/admin/repositories")) return "Repositories";
+    if (location.pathname.startsWith("/admin/settings")) return "System Settings";
+    if (location.pathname.startsWith("/admin/logs")) return "Logs & Activity";
     return "Admin Dashboard";
   }, [location.pathname]);
 
@@ -221,24 +236,22 @@ function AdminLayout() {
 
   return (
     <div className="min-h-screen bg-[#f4f6fb]">
-      <div className="mx-auto flex max-w-[1700px]">
+      <div className="mx-auto flex max-w-[1760px]">
         <aside
-          className={`fixed inset-y-0 left-0 z-40 w-[270px] border-r border-[#2b1f6d] bg-gradient-to-b from-[#1b1650] via-[#1a2558] to-[#13284b] text-white transition-transform duration-300 md:static md:translate-x-0 ${
+          className={`fixed inset-y-0 left-0 z-40 w-[252px] border-r border-[#1a4e31] bg-gradient-to-b from-[#0f3a25] via-[#134b2f] to-[#103528] text-white transition-transform duration-300 md:static md:translate-x-0 ${
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
           }`}
         >
           <div className="flex h-full flex-col">
-            <div className="border-b border-white/10 px-6 py-6">
-              <p className="flex items-center gap-3 text-xl font-bold tracking-tight">
-                <ShieldCheck className="h-6 w-6 text-[#92d6ff]" />
-                Admin Console
+            <div className="border-b border-white/10 px-5 py-5">
+              <p className="flex items-center gap-2.5 text-xl font-bold tracking-tight">
+                <ShieldCheck className="h-5 w-5 text-[#bce9cf]" />
+                Git Tracker Tool
               </p>
-              <p className="mt-1 text-xs text-[#bad2ff]">
-                Governance & System Control
-              </p>
+              <p className="mt-1 text-xs text-[#c6ebd7]">Admin Interface</p>
             </div>
 
-            <nav className="flex-1 space-y-1 px-3 py-5">
+            <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const active =
@@ -249,10 +262,10 @@ function AdminLayout() {
                   <NavLink
                     key={item.label}
                     to={item.to}
-                    className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition ${
+                    className={`flex items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-sm font-semibold transition ${
                       active
-                        ? "bg-[#4a63d2] text-white shadow-lg shadow-[#304ab4]/40"
-                        : "text-[#d8e4ff] hover:bg-white/10 hover:text-white"
+                        ? "bg-[#1b6b43] text-white shadow-lg shadow-[#103f29]/40"
+                        : "text-[#d8f0e1] hover:bg-white/10 hover:text-white"
                     }`}
                     onClick={() => setSidebarOpen(false)}
                   >
@@ -277,7 +290,7 @@ function AdminLayout() {
         </aside>
 
         <div className="min-h-screen flex-1">
-          <header className="sticky top-0 z-30 border-b border-[#dee4f0] bg-white/95 px-4 py-3 backdrop-blur md:px-7">
+          <header className="sticky top-0 z-30 border-b border-[#dee4f0] bg-white px-4 py-3 md:px-7">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <button
@@ -288,16 +301,12 @@ function AdminLayout() {
                   <Menu className="h-4 w-4" />
                 </button>
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-[#4a63d2] to-[#29a6d4] text-sm font-bold text-white shadow-md">
-                    {avatar}
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[#d5e0ef] bg-[#f1f6ff] text-sm font-bold text-[#2a4f80]">
+                    <ShieldCheck className="h-4 w-4" />
                   </div>
                   <div>
-                    <p className="text-lg font-semibold text-[#28354a]">
-                      Welcome, {user?.name || "Administrator"}
-                    </p>
-                    <p className="text-xs font-medium uppercase tracking-wider text-[#7288a7]">
-                      {sectionLabel}
-                    </p>
+                    <p className="text-sm font-semibold text-[#28354a]">Git Tracker Tool</p>
+                    <p className="text-xs text-[#7288a7]">{sectionLabel}</p>
                   </div>
                 </div>
               </div>
@@ -387,9 +396,12 @@ function AdminLayout() {
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#e8edff] text-xs font-extrabold text-[#2a3f62]">
                       {avatar}
                     </div>
-                    <span className="hidden text-sm font-semibold text-[#344a68] md:inline">
-                      {user?.role || "ADMIN"}
-                    </span>
+                    <div className="hidden md:block">
+                      <p className="text-sm font-semibold text-[#344a68]">
+                        {user?.name || "Admin User"}
+                      </p>
+                      <p className="text-[11px] text-[#7b90aa]">Administrator</p>
+                    </div>
                   </button>
 
                   {menuOpen && (

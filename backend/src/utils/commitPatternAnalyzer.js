@@ -1,15 +1,27 @@
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+const toNonNegativeNumber = (value, fallback) => {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) return fallback;
+    return Math.max(0, parsed);
+};
+
 exports.analyzeCommitPatterns = (commits, config) => {
 
-    const inactivityDays = config?.inactivityDays || 7;
-    const minExpectedCommits = config?.minExpectedCommits || 3;
+    const inactivityDays = toNonNegativeNumber(config?.inactivityDays, 7);
+    const minExpectedCommits = toNonNegativeNumber(config?.minExpectedCommits, 3);
+    const actualCommits = Array.isArray(commits) ? commits.length : 0;
+    const belowExpectedCommits =
+        minExpectedCommits > 0 && actualCommits < minExpectedCommits;
 
     if (!commits || commits.length === 0) {
         return {
             inactivityGaps: [],
             deadlineSpike: false,
-            commitsByDate: {}
+            commitsByDate: {},
+            belowExpectedCommits,
+            expectedCommitsTarget: minExpectedCommits,
+            actualCommits
         };
     }
 
@@ -63,6 +75,9 @@ exports.analyzeCommitPatterns = (commits, config) => {
     return {
         inactivityGaps,
         deadlineSpike,
-        commitsByDate
+        commitsByDate,
+        belowExpectedCommits,
+        expectedCommitsTarget: minExpectedCommits,
+        actualCommits
     };
 };

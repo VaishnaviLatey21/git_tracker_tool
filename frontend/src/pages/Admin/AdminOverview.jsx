@@ -5,7 +5,6 @@ import {
   Database,
   GitCommitHorizontal,
   MessageSquare,
-  ShieldAlert,
   Users,
 } from "lucide-react";
 import { useOutletContext } from "react-router-dom";
@@ -48,6 +47,9 @@ function AdminOverview() {
     useOutletContext() || {};
   const [summary, setSummary] = useState(fallbackSummary);
   const [loading, setLoading] = useState(true);
+  const [timeWindowDays, setTimeWindowDays] = useState("14");
+  const [moduleScope, setModuleScope] = useState("ALL");
+  const [groupScope, setGroupScope] = useState("ALL");
 
   useEffect(() => {
     const loadSummary = async () => {
@@ -74,17 +76,59 @@ function AdminOverview() {
     [summary.usersByRole]
   );
 
+  const commitSeries = useMemo(() => {
+    const windowDays = Number.parseInt(timeWindowDays, 10) || 14;
+    return (summary.trends.commitActivity || []).slice(-windowDays);
+  }, [summary.trends.commitActivity, timeWindowDays]);
+
   if (loading) {
     return <div className="rounded-2xl border border-[#d7e1f0] bg-white p-6">Loading admin summary...</div>;
   }
 
   return (
     <div className="space-y-6">
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="rounded-2xl border border-[#d7e1f0] bg-white p-4 shadow-sm">
+        <div className="grid gap-3 md:grid-cols-4">
+          <label className="block">
+            <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-[#6f86a6]">Module</span>
+            <select
+              className="w-full rounded-lg border border-[#d6e0ef] bg-white px-3 py-2 text-sm text-[#2a3f60]"
+              value={moduleScope}
+              onChange={(event) => setModuleScope(event.target.value)}
+            >
+              <option value="ALL">All Modules</option>
+            </select>
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-[#6f86a6]">Group</span>
+            <select
+              className="w-full rounded-lg border border-[#d6e0ef] bg-white px-3 py-2 text-sm text-[#2a3f60]"
+              value={groupScope}
+              onChange={(event) => setGroupScope(event.target.value)}
+            >
+              <option value="ALL">All Groups</option>
+            </select>
+          </label>
+          <label className="block md:col-span-2">
+            <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-[#6f86a6]">Time Window</span>
+            <select
+              className="w-full rounded-lg border border-[#d6e0ef] bg-white px-3 py-2 text-sm text-[#2a3f60]"
+              value={timeWindowDays}
+              onChange={(event) => setTimeWindowDays(event.target.value)}
+            >
+              <option value="7">Last 7 days</option>
+              <option value="14">Last 14 days</option>
+              <option value="30">Last 30 days</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <article className="rounded-2xl border border-[#d7e1f0] bg-white p-5 shadow-sm">
           <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#7188a9]">
             <Users className="h-3.5 w-3.5" />
-            Total Users
+            Users
           </p>
           <h2 className="mt-2 text-3xl font-bold text-[#233652]">{summary.totals.users}</h2>
           <p className="mt-1 text-sm text-[#6b819f]">
@@ -95,32 +139,37 @@ function AdminOverview() {
         <article className="rounded-2xl border border-[#d7e1f0] bg-white p-5 shadow-sm">
           <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#7188a9]">
             <Database className="h-3.5 w-3.5" />
-            Academic Scope
+            Convenors
           </p>
-          <h2 className="mt-2 text-3xl font-bold text-[#233652]">{summary.totals.modules}</h2>
-          <p className="mt-1 text-sm text-[#6b819f]">Modules across {summary.totals.groups} groups</p>
+          <h2 className="mt-2 text-3xl font-bold text-[#233652]">{summary.usersByRole.CONVENOR || 0}</h2>
+          <p className="mt-1 text-sm text-[#6b819f]">Active module convenors</p>
         </article>
 
         <article className="rounded-2xl border border-[#d7e1f0] bg-white p-5 shadow-sm">
           <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#7188a9]">
             <GitCommitHorizontal className="h-3.5 w-3.5" />
-            Repository Activity
+            Modules
           </p>
-          <h2 className="mt-2 text-3xl font-bold text-[#233652]">{summary.totals.commits}</h2>
-          <p className="mt-1 text-sm text-[#6b819f]">
-            {summary.totals.repositories} repositories tracked
-          </p>
+          <h2 className="mt-2 text-3xl font-bold text-[#233652]">{summary.totals.modules}</h2>
+          <p className="mt-1 text-sm text-[#6b819f]">Total modules</p>
         </article>
 
-        <article className="rounded-2xl border border-[#f3d0d6] bg-[#fff9fb] p-5 shadow-sm">
-          <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#b74f60]">
-            <ShieldAlert className="h-3.5 w-3.5" />
-            Flagged Contributors
+        <article className="rounded-2xl border border-[#d7e1f0] bg-white p-5 shadow-sm">
+          <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#7188a9]">
+            <Users className="h-3.5 w-3.5" />
+            Groups
           </p>
-          <h2 className="mt-2 text-3xl font-bold text-[#a13f50]">
-            {summary.totals.flaggedContributors}
-          </h2>
-          <p className="mt-1 text-sm text-[#b76b79]">Needs cross-module review</p>
+          <h2 className="mt-2 text-3xl font-bold text-[#233652]">{summary.totals.groups}</h2>
+          <p className="mt-1 text-sm text-[#6b819f]">Total groups</p>
+        </article>
+
+        <article className="rounded-2xl border border-[#d7e1f0] bg-white p-5 shadow-sm">
+          <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#7188a9]">
+            <Database className="h-3.5 w-3.5" />
+            Repositories
+          </p>
+          <h2 className="mt-2 text-3xl font-bold text-[#233652]">{summary.totals.repositories}</h2>
+          <p className="mt-1 text-sm text-[#6b819f]">Linked repositories</p>
         </article>
       </section>
 
@@ -131,7 +180,7 @@ function AdminOverview() {
               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#7188a9]">
                 System Commit Activity
               </p>
-              <h3 className="text-xl font-bold text-[#21344e]">Last 14 Days</h3>
+              <h3 className="text-xl font-bold text-[#21344e]">Last {timeWindowDays} Days</h3>
             </div>
             <span className="rounded-full border border-[#d6e2f3] bg-[#f5f9ff] px-3 py-1 text-xs font-semibold text-[#5a7292]">
               Daily Commits
@@ -140,7 +189,7 @@ function AdminOverview() {
 
           <div className="h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={summary.trends.commitActivity || []}>
+              <LineChart data={commitSeries}>
                 <CartesianGrid strokeDasharray="4 4" stroke="#dce6f4" />
                 <XAxis dataKey="date" stroke="#6e839f" />
                 <YAxis stroke="#6e839f" allowDecimals={false} />

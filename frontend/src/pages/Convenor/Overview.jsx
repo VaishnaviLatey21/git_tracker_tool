@@ -16,10 +16,10 @@ import {
   UsersRound,
 } from "lucide-react";
 import {
-  Area,
-  AreaChart,
   CartesianGrid,
+  Legend,
   Line,
+  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -32,9 +32,36 @@ const initialOverviewStats = {
   totalGroups: 0,
   repositories: 0,
   flaggedStudents: 0,
+  activeStudents: 0,
 };
 
 const initialRepoForm = { url: "", platform: "GITLAB" };
+
+const formatDateInput = (value) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toISOString().slice(0, 10);
+};
+
+const getDefaultDateRange = () => {
+  const endDate = new Date();
+  const startDate = new Date();
+  startDate.setDate(endDate.getDate() - 29);
+
+  return {
+    startDate: formatDateInput(startDate),
+    endDate: formatDateInput(endDate),
+  };
+};
+
+const isInDateRange = (timestamp, startDate, endDate) => {
+  const value = new Date(timestamp);
+  if (Number.isNaN(value.getTime())) return false;
+
+  if (startDate && value < new Date(`${startDate}T00:00:00`)) return false;
+  if (endDate && value > new Date(`${endDate}T23:59:59`)) return false;
+  return true;
+};
 
 const getWeekStart = (date) => {
   const value = new Date(date);
@@ -44,8 +71,30 @@ const getWeekStart = (date) => {
   return value;
 };
 
-const buildTrendData = (contributors) => {
-  if (!contributors?.length) return [];
+const getContributorKey = (contributor) =>
+  `${String(contributor?.email || "").trim().toLowerCase()}::${String(
+    contributor?.name || ""
+  )
+    .trim()
+    .toLowerCase()}`;
+
+const buildTrendSeries = (contributors, maxStudentLines = 2) => {
+  if (!contributors?.length) return { data: [], studentLines: [] };
+
+  const palette = ["#4f7fd1", "#1da39a", "#b874d6", "#ea9b5f"];
+  const topStudentLines = [...contributors]
+    .sort((a, b) => Number(b.totalCommits || 0) - Number(a.totalCommits || 0))
+    .slice(0, maxStudentLines)
+    .map((contributor, index) => ({
+      key: `studentLine${index + 1}`,
+      label: contributor.name || `Student ${index + 1}`,
+      color: palette[index % palette.length],
+      contributorKey: getContributorKey(contributor),
+    }));
+
+  const studentLineLookup = new Map(
+    topStudentLines.map((line) => [line.contributorKey, line.key])
+  );
 
   const weekly = new Map();
 
@@ -67,6 +116,7 @@ const buildTrendData = (contributors) => {
           commits: 0,
           lowQuality: 0,
           contributors: new Set(),
+          ...Object.fromEntries(topStudentLines.map((line) => [line.key, 0])),
         });
       }
 
@@ -76,6 +126,11 @@ const buildTrendData = (contributors) => {
       if (commit.isLowQuality || Number(commit.qualityScore || 0) < 60) {
         bucket.lowQuality += 1;
       }
+
+      const studentLineKey = studentLineLookup.get(getContributorKey(student));
+      if (studentLineKey) {
+        bucket[studentLineKey] += 1;
+      }
     });
   });
 
@@ -83,7 +138,7 @@ const buildTrendData = (contributors) => {
     a.key.localeCompare(b.key)
   );
 
-  return sorted.map((point, index, allPoints) => {
+  const data = sorted.map((point, index, allPoints) => {
     const movingWindow = allPoints.slice(Math.max(0, index - 2), index + 1);
     const movingAverage =
       movingWindow.reduce((sum, item) => sum + item.commits, 0) /
@@ -98,8 +153,18 @@ const buildTrendData = (contributors) => {
       qualityRatio: point.commits
         ? Number(((point.lowQuality / point.commits) * 100).toFixed(1))
         : 0,
+      ...Object.fromEntries(topStudentLines.map((line) => [line.key, point[line.key]])),
     };
   });
+
+  return {
+    data,
+    studentLines: topStudentLines.map((line) => ({
+      key: line.key,
+      label: line.label,
+      color: line.color,
+    })),
+  };
 };
 
 const getTrendSummary = (trendData = []) => {
@@ -126,21 +191,90 @@ const getTrendSummary = (trendData = []) => {
   };
 };
 
+const buildRecentWeeks = (weeks = 8) => {
+  const now = new Date();
+  const currentWeek = getWeekStart(now);
+
+  const rows = [];
+  for (let offset = weeks - 1; offset >= 0; offset -= 1) {
+    const weekStart = new Date(currentWeek);
+    weekStart.setDate(currentWeek.getDate() - offset * 7);
+    rows.push({
+      key: weekStart.toISOString().slice(0, 10),
+      label: weekStart.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+      }),
+    });
+  }
+
+  return rows;
+};
+
+const buildCohortHeatmap = (contributors = [], weeks = 8) => {
+  const weekColumns = buildRecentWeeks(weeks);
+
+  const rows = [...contributors]
+    .sort((a, b) => Number(b.totalCommits || 0) - Number(a.totalCommits || 0))
+    .slice(0, 12)
+    .map((contributor) => {
+      const counts = new Map();
+
+      (contributor.commits || []).forEach((commit) => {
+        const commitDate = new Date(commit.timestamp);
+        if (Number.isNaN(commitDate.getTime())) return;
+
+        const weekStart = getWeekStart(commitDate);
+        const key = weekStart.toISOString().slice(0, 10);
+        counts.set(key, (counts.get(key) || 0) + 1);
+      });
+
+      const cells = weekColumns.map((week) => counts.get(week.key) || 0);
+
+      return {
+        name: contributor.name,
+        email: contributor.email,
+        totalCommits: contributor.totalCommits,
+        cells,
+      };
+    });
+
+  const maxCount = rows.reduce((max, row) => {
+    const rowMax = row.cells.reduce((innerMax, value) => Math.max(innerMax, value), 0);
+    return Math.max(max, rowMax);
+  }, 0);
+
+  return {
+    weekColumns,
+    rows,
+    maxCount,
+  };
+};
+
+const getHeatIntensityClass = (count, maxCount) => {
+  if (!count || !maxCount) return "level-0";
+  const ratio = count / maxCount;
+  if (ratio >= 0.75) return "level-4";
+  if (ratio >= 0.5) return "level-3";
+  if (ratio >= 0.25) return "level-2";
+  return "level-1";
+};
+
 const CustomTrendTooltip = ({ active, payload, label }) => {
   if (!active || !payload || !payload.length) return null;
 
-  const values = payload.reduce((acc, item) => {
-    acc[item.dataKey] = item.value;
-    return acc;
-  }, {});
+  const row = payload[0]?.payload || {};
+  const stats = payload.filter((entry) => Number.isFinite(Number(entry?.value)));
 
   return (
     <div className="conv-chart-tooltip">
       <p className="conv-chart-tooltip-title">Week of {label}</p>
-      <p>Commits: {values.commits || 0}</p>
-      <p>Active Contributors: {values.activeContributors || 0}</p>
-      <p>Moving Avg (3 weeks): {values.movingAverage || 0}</p>
-      <p>Low-quality Ratio: {values.qualityRatio || 0}%</p>
+      {stats.map((entry) => (
+        <p key={`${entry.name}-${entry.dataKey}`}>
+          {entry.name}: {entry.value}
+        </p>
+      ))}
+      <p>Low-quality ratio: {row.qualityRatio || 0}%</p>
     </div>
   );
 };
@@ -169,6 +303,7 @@ function Overview() {
   const [supportSending, setSupportSending] = useState(false);
   const [supportError, setSupportError] = useState("");
   const [supportSuccess, setSupportSuccess] = useState("");
+  const [dateRange, setDateRange] = useState(getDefaultDateRange);
 
   useEffect(() => {
     const loadInitialData = async () => {
@@ -276,19 +411,121 @@ function Overview() {
     [contributorsByGroup, selectedGroup]
   );
 
-  const trendData = useMemo(
-    () => buildTrendData(selectedContributors),
-    [selectedContributors]
+  const filteredSelectedContributors = useMemo(
+    () =>
+      (selectedContributors || []).map((contributor) => {
+        const commits = (contributor.commits || []).filter((commit) =>
+          isInDateRange(commit.timestamp, dateRange.startDate, dateRange.endDate)
+        );
+
+        return {
+          ...contributor,
+          commits,
+          totalCommits: commits.length,
+          lowQualityCommits: commits.filter((commit) => commit.isLowQuality).length,
+        };
+      }),
+    [selectedContributors, dateRange.endDate, dateRange.startDate]
   );
+
+  const trendSeries = useMemo(
+    () => buildTrendSeries(filteredSelectedContributors),
+    [filteredSelectedContributors]
+  );
+  const trendData = trendSeries.data;
+  const trendStudentLines = trendSeries.studentLines;
   const trendSummary = useMemo(() => getTrendSummary(trendData), [trendData]);
 
   const topStudents = useMemo(
     () =>
-      [...selectedContributors]
+      [...filteredSelectedContributors]
         .sort((a, b) => Number(b.totalCommits || 0) - Number(a.totalCommits || 0))
         .slice(0, 6),
-    [selectedContributors]
+    [filteredSelectedContributors]
   );
+
+  const heatmap = useMemo(
+    () => buildCohortHeatmap(filteredSelectedContributors, 8),
+    [filteredSelectedContributors]
+  );
+
+  const groupComparisonRows = useMemo(() => {
+    const rows = groups.map((group) => {
+      const contributors = contributorsByGroup[group.id] || [];
+      const repository = repositoriesByGroup[group.id];
+
+      const totalCommits = contributors.reduce(
+        (sum, contributor) => sum + Number(contributor.totalCommits || 0),
+        0
+      );
+      const lowQualityCommits = contributors.reduce(
+        (sum, contributor) => sum + Number(contributor.lowQualityCommits || 0),
+        0
+      );
+      const inactivityStudents = contributors.filter(
+        (contributor) => contributor.inactivityFlag
+      ).length;
+      const belowExpectedStudents = contributors.filter(
+        (contributor) => contributor.belowExpectedCommits
+      ).length;
+      const deadlineSpikes = contributors.filter(
+        (contributor) => contributor.deadlineSpike
+      ).length;
+
+      const lowQualityRatio = totalCommits
+        ? Number(((lowQualityCommits / totalCommits) * 100).toFixed(1))
+        : 0;
+
+      const riskScore =
+        belowExpectedStudents * 4 +
+        inactivityStudents * 3 +
+        deadlineSpikes * 2 +
+        Math.ceil(lowQualityRatio / 10) +
+        (repository ? 0 : 2);
+
+      return {
+        groupId: group.id,
+        groupName: group.name,
+        repositoryLinked: Boolean(repository),
+        totalCommits,
+        lowQualityRatio,
+        inactivityStudents,
+        belowExpectedStudents,
+        deadlineSpikes,
+        riskScore,
+      };
+    });
+
+    return rows.sort((a, b) => b.riskScore - a.riskScore);
+  }, [groups, contributorsByGroup, repositoriesByGroup]);
+
+  const activeStudentsCount = useMemo(() => {
+    const uniqueActive = new Set();
+
+    Object.values(contributorsByGroup || {}).forEach((contributors) => {
+      (contributors || []).forEach((contributor) => {
+        if (Number(contributor.totalCommits || 0) > 0) {
+          uniqueActive.add(String(contributor.email || contributor.name));
+        }
+      });
+    });
+
+    return uniqueActive.size;
+  }, [contributorsByGroup]);
+
+  const setContributionDatePreset = (days) => {
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(endDate.getDate() - Math.max(0, Number(days) - 1));
+    setDateRange({
+      startDate: formatDateInput(startDate),
+      endDate: formatDateInput(endDate),
+    });
+  };
+
+  const handleContributionDateChange = (key, value) => {
+    setDateRange((prev) => ({ ...prev, [key]: value }));
+  };
 
   const openRepoDialog = (groupId) => {
     setRepoTargetGroupId(groupId);
@@ -395,6 +632,8 @@ function Overview() {
         <h1 className="conv-hero-title">Git Repository Analytics</h1>
       </section>
 
+
+
       <section className="conv-grid-4">
         <article className="conv-stat-card">
           <div className="conv-stat-top">
@@ -426,18 +665,18 @@ function Overview() {
           <h2 className="conv-stat-value">{stats.repositories}</h2>
           <p className="conv-stat-note">GitHub and GitLab sources</p>
         </article>
-        <article className="conv-stat-card danger">
+        <article className="conv-stat-card">
           <div className="conv-stat-top">
-            <p className="conv-kicker danger">
-              <ShieldAlert className="h-4 w-4" />
-              Flagged Students
+            <p className="conv-kicker">
+              <Users className="h-4 w-4" />
+              Active Students
             </p>
-            <span className="conv-stat-icon danger">
-              <ShieldAlert className="h-4 w-4" />
+            <span className="conv-stat-icon">
+              <Users className="h-4 w-4" />
             </span>
           </div>
-          <h2 className="conv-stat-value danger">{stats.flaggedStudents}</h2>
-          <p className="conv-stat-note danger">Needs convenor intervention</p>
+          <h2 className="conv-stat-value">{stats.activeStudents || activeStudentsCount}</h2>
+          <p className="conv-stat-note">Contributors active in selected scope</p>
         </article>
       </section>
 
@@ -575,10 +814,52 @@ function Overview() {
               {selectedGroup ? selectedGroup.name : "No group selected"}
             </h2>
           </div>
-          <span className="conv-chip">
-            <Activity className="h-3.5 w-3.5" />
-            Weekly Trend
-          </span>
+          <div className="conv-analytics-toolbar">
+            <span className="conv-chip">
+              <Activity className="h-3.5 w-3.5" />
+              Weekly Trend
+            </span>
+            <div className="conv-inline-filters">
+              <label className="conv-inline-filter">
+                <span>From</span>
+                <input
+                  type="date"
+                  value={dateRange.startDate}
+                  max={dateRange.endDate || undefined}
+                  onChange={(event) =>
+                    handleContributionDateChange("startDate", event.target.value)
+                  }
+                  className="conv-input conv-input-compact"
+                />
+              </label>
+              <label className="conv-inline-filter">
+                <span>To</span>
+                <input
+                  type="date"
+                  value={dateRange.endDate}
+                  min={dateRange.startDate || undefined}
+                  onChange={(event) =>
+                    handleContributionDateChange("endDate", event.target.value)
+                  }
+                  className="conv-input conv-input-compact"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => setContributionDatePreset(30)}
+                className="conv-btn light sm"
+              >
+                Last 30 Days
+              </button>
+              <button
+                type="button"
+                onClick={() => setContributionDatePreset(90)}
+                className="conv-btn light sm"
+              >
+                Last 90 Days
+              </button>
+            </div>
+          </div>
         </div>
 
         <div className="conv-contrib-grid">
@@ -613,63 +894,186 @@ function Overview() {
               <span>Avg active contributors: {trendSummary.avgContributors}</span>
               <span>Avg low-quality ratio: {trendSummary.avgQualityRisk}%</span>
             </div>
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={trendData}>
-                <defs>
-                  <linearGradient id="convTrendCommits" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#2c7cc7" stopOpacity={0.4} />
-                    <stop offset="100%" stopColor="#2c7cc7" stopOpacity={0.05} />
-                  </linearGradient>
-                  <linearGradient
-                    id="convTrendContributors"
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="1"
-                  >
-                    <stop offset="0%" stopColor="#17a79b" stopOpacity={0.3} />
-                    <stop offset="100%" stopColor="#17a79b" stopOpacity={0.04} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="4 4" stroke="#dce7f5" />
-                <XAxis dataKey="week" stroke="#6e839f" />
-                <YAxis yAxisId="left" stroke="#4f6785" allowDecimals={false} />
-                <YAxis
-                  yAxisId="right"
-                  orientation="right"
-                  stroke="#4f6785"
-                  allowDecimals={false}
-                />
-                <Tooltip content={<CustomTrendTooltip />} />
-                <Area
-                  yAxisId="left"
-                  type="monotone"
-                  dataKey="commits"
-                  stroke="#2c7cc7"
-                  strokeWidth={2.4}
-                  fill="url(#convTrendCommits)"
-                />
-                <Area
-                  yAxisId="right"
-                  type="monotone"
-                  dataKey="activeContributors"
-                  stroke="#17a79b"
-                  strokeWidth={2}
-                  fill="url(#convTrendContributors)"
-                />
-                <Line
-                  yAxisId="left"
-                  type="monotone"
-                  dataKey="movingAverage"
-                  stroke="#c78a2b"
-                  strokeWidth={2}
-                  dot={false}
-                  strokeDasharray="7 4"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            {trendData.length === 0 ? (
+              <p className="conv-empty subtle">No commits found for the selected date range.</p>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart
+                  data={trendData}
+                  margin={{ top: 10, right: 16, left: 8, bottom: 4 }}
+                >
+                  <CartesianGrid strokeDasharray="4 4" stroke="#dce7f5" />
+                  <XAxis dataKey="week" stroke="#6e839f" />
+                  <YAxis yAxisId="left" stroke="#4f6785" allowDecimals={false} />
+                  <YAxis
+                    yAxisId="right"
+                    orientation="right"
+                    stroke="#6280a3"
+                    allowDecimals={false}
+                  />
+                  <Tooltip content={<CustomTrendTooltip />} />
+                  <Legend verticalAlign="top" height={26} iconType="line" />
+                  <Line
+                    yAxisId="left"
+                    type="linear"
+                    dataKey="commits"
+                    name="Total Commits"
+                    stroke="#2c7cc7"
+                    strokeWidth={3}
+                    dot={{ r: 3 }}
+                    activeDot={{ r: 5 }}
+                  />
+                  <Line
+                    yAxisId="right"
+                    type="linear"
+                    dataKey="activeContributors"
+                    name="Active Students"
+                    stroke="#1f9f89"
+                    strokeWidth={2.4}
+                    dot={{ r: 2.6 }}
+                  />
+                  <Line
+                    yAxisId="left"
+                    type="linear"
+                    dataKey="lowQuality"
+                    name="Low-quality Commits"
+                    stroke="#d77b42"
+                    strokeWidth={2.2}
+                    dot={{ r: 2.2 }}
+                  />
+                  {trendStudentLines.map((line) => (
+                    <Line
+                      key={line.key}
+                      yAxisId="left"
+                      type="linear"
+                      dataKey={line.key}
+                      name={`${line.label} commits`}
+                      stroke={line.color}
+                      strokeWidth={1.9}
+                      dot={false}
+                      strokeDasharray="6 4"
+                    />
+                  ))}
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
+
+        <div className="conv-heatmap-wrap">
+          <div className="conv-panel-header compact">
+            <div>
+              <p className="conv-kicker">Cohort Heatmap</p>
+              <h3 className="conv-panel-title small">
+                Students vs Weeks Activity Intensity
+              </h3>
+            </div>
+          </div>
+
+          {heatmap.rows.length === 0 ? (
+            <div className="conv-empty subtle">
+              No cohort activity yet for heatmap view.
+            </div>
+          ) : (
+            <div className="conv-heatmap-table">
+              <div className="conv-heatmap-head">
+                <span>Student</span>
+                {heatmap.weekColumns.map((column) => (
+                  <span key={`head-${column.key}`}>{column.label}</span>
+                ))}
+              </div>
+              {heatmap.rows.map((row) => (
+                <div key={`row-${row.email}`} className="conv-heatmap-row">
+                  <span className="student-name" title={row.email}>
+                    {row.name}
+                  </span>
+                  {row.cells.map((count, index) => (
+                    <span
+                      key={`${row.email}-${heatmap.weekColumns[index].key}`}
+                      className={`conv-heatmap-cell ${getHeatIntensityClass(
+                        count,
+                        heatmap.maxCount
+                      )}`}
+                      title={`${row.name} - ${heatmap.weekColumns[index].label}: ${count} commits`}
+                    >
+                      {count}
+                    </span>
+                  ))}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="conv-card">
+        <div className="conv-panel-header">
+          <div>
+            <p className="conv-kicker">Group Comparison Board</p>
+            <h2 className="conv-panel-title">Risk & Contribution Ranking</h2>
+          </div>
+          <span className="conv-chip">
+            <ShieldAlert className="h-3.5 w-3.5" />
+            Ranked by risk score
+          </span>
+        </div>
+
+        {groupComparisonRows.length === 0 ? (
+          <div className="conv-empty subtle">
+            No group comparison data available yet.
+          </div>
+        ) : (
+          <div className="conv-table-wrap">
+            <table className="conv-table">
+              <thead>
+                <tr>
+                  <th>Rank</th>
+                  <th>Group</th>
+                  <th>Repo</th>
+                  <th>Commits</th>
+                  <th>Low-quality Ratio</th>
+                  <th>Below Expected</th>
+                  <th>Inactivity</th>
+                  <th>Spikes</th>
+                  <th>Risk Score</th>
+                </tr>
+              </thead>
+              <tbody>
+                {groupComparisonRows.map((row, index) => (
+                  <tr key={`comparison-${row.groupId}`}>
+                    <td className="strong">#{index + 1}</td>
+                    <td className="strong">{row.groupName}</td>
+                    <td>
+                      {row.repositoryLinked ? (
+                        <span className="conv-badge success">Linked</span>
+                      ) : (
+                        <span className="conv-badge warning">Missing</span>
+                      )}
+                    </td>
+                    <td>{row.totalCommits}</td>
+                    <td>{row.lowQualityRatio}%</td>
+                    <td>{row.belowExpectedStudents}</td>
+                    <td>{row.inactivityStudents}</td>
+                    <td>{row.deadlineSpikes}</td>
+                    <td>
+                      <span
+                        className={`conv-badge ${
+                          row.riskScore >= 8
+                            ? "warning"
+                            : row.riskScore >= 4
+                              ? "purple"
+                              : "success"
+                        }`}
+                      >
+                        {row.riskScore}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
 
       <section className="conv-card">

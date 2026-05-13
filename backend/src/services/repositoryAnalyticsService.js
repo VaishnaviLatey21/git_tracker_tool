@@ -9,6 +9,29 @@ const {
   applyIdentityMappings,
 } = require("../utils/contributorIdentityMapper");
 
+const normalizeIdentity = (value = "") => String(value || "").trim().toLowerCase();
+
+const toStoredContributorKey = (commit) => {
+  const email = normalizeIdentity(commit.authorEmail);
+  const name = normalizeIdentity(commit.authorName);
+
+  const hasReliableEmail =
+    email &&
+    email !== "unknown@example.com" &&
+    !email.includes("no-reply") &&
+    !email.includes("noreply");
+
+  if (hasReliableEmail) {
+    return `email:${email}`;
+  }
+
+  if (name) {
+    return `name:${name}|email:${email || "unknown"}`;
+  }
+
+  return `sha:${commit.sha}`;
+};
+
 const fetchRawContributorsByPlatform = async (
   repository,
   moduleConfig = {}
@@ -87,9 +110,10 @@ exports.fetchStoredRepositoryContributorsWithIdentity = async (
   const rawMap = new Map();
 
   commits.forEach((commit) => {
+    const key = toStoredContributorKey(commit);
     const email = commit.authorEmail || "unknown@example.com";
-    if (!rawMap.has(email)) {
-      rawMap.set(email, {
+    if (!rawMap.has(key)) {
+      rawMap.set(key, {
         name: commit.authorName || "Unknown",
         email,
         username: String(email).split("@")[0] || "unknown",
@@ -99,7 +123,7 @@ exports.fetchStoredRepositoryContributorsWithIdentity = async (
       });
     }
 
-    const contributor = rawMap.get(email);
+    const contributor = rawMap.get(key);
     const qualityScore =
       typeof commit.qualityScore === "number" ? commit.qualityScore : 100;
 

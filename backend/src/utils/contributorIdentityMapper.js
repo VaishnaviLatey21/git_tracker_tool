@@ -1,6 +1,23 @@
 const { analyzeCommitPatterns } = require("./commitPatternAnalyzer");
 
 const normalize = (value) => (value || "").trim().toLowerCase();
+const normalizeName = (value) =>
+  normalize(value)
+    .replace(/\s+/g, " ")
+    .trim();
+
+const getStudentPrimaryIdentity = (student) =>
+  (student?.identities || []).find(
+    (identity) => normalize(identity?.gitEmail) || normalize(identity?.gitUsername)
+  ) || null;
+
+const hasReliableEmail = (value) => {
+  const email = normalize(value);
+  if (!email) return false;
+  if (email === "unknown@example.com") return false;
+  if (email.includes("no-reply") || email.includes("noreply")) return false;
+  return email.includes("@");
+};
 
 const inferUsername = (contributor) => {
   if (contributor?.username) return normalize(contributor.username);
@@ -29,6 +46,10 @@ const finalizeContributors = (contributors, moduleConfig = {}) => {
       totalCommits: commits.length,
       lowQualityCommits,
       inactivityGaps: patterns.inactivityGaps,
+      inactivityFlag: (patterns.inactivityGaps || []).length > 0,
+      belowExpectedCommits: !!patterns.belowExpectedCommits,
+      expectedCommitsTarget: patterns.expectedCommitsTarget,
+      actualCommits: patterns.actualCommits,
       deadlineSpike: patterns.deadlineSpike,
       commitsByDate: patterns.commitsByDate,
     };
@@ -58,8 +79,14 @@ exports.applyIdentityMappings = (
 
   const emailToStudent = new Map();
   const usernameToStudent = new Map();
+  const nameToStudent = new Map();
 
   students.forEach((student) => {
+    const studentNameKey = normalizeName(student.name);
+    if (studentNameKey && !nameToStudent.has(studentNameKey)) {
+      nameToStudent.set(studentNameKey, student);
+    }
+
     student.identities?.forEach((identity) => {
       const email = normalize(identity.gitEmail);
       const username = normalize(identity.gitUsername);
@@ -73,22 +100,34 @@ exports.applyIdentityMappings = (
   contributors.forEach((contributor) => {
     const contributorEmail = normalize(contributor.email);
     const contributorUsername = inferUsername(contributor);
+    const contributorName = normalizeName(contributor.name);
 
     const mappedStudent =
       emailToStudent.get(contributorEmail) ||
-      usernameToStudent.get(contributorUsername);
+      usernameToStudent.get(contributorUsername) ||
+      nameToStudent.get(contributorName);
 
     const bucketKey = mappedStudent
       ? `student:${mappedStudent.id}`
-      : `raw:${contributorEmail || contributorUsername || contributor.name}`;
+      : `raw:${contributorEmail}|${contributorUsername}|${contributorName || "unknown"}`;
 
     if (!merged.has(bucketKey)) {
+      const primaryIdentity = mappedStudent
+        ? getStudentPrimaryIdentity(mappedStudent)
+        : null;
+      const fallbackStudentEmail = mappedStudent
+        ? primaryIdentity?.gitUsername
+          ? `${normalize(primaryIdentity.gitUsername) || `student-${mappedStudent.id}`}@identity.local`
+          : `student-${mappedStudent.id}@unmapped.local`
+        : "unknown@example.com";
+
       merged.set(bucketKey, {
         name: mappedStudent?.name || contributor.name || "Unknown",
         email:
-          mappedStudent?.identities?.find((item) => item.gitEmail)?.gitEmail ||
-          contributor.email ||
-          "unknown@example.com",
+          primaryIdentity?.gitEmail ||
+          (hasReliableEmail(contributor.email)
+            ? contributor.email
+            : fallbackStudentEmail),
         universityId: mappedStudent?.universityId || null,
         commits: [],
       });
@@ -96,6 +135,19 @@ exports.applyIdentityMappings = (
 
     const bucket = merged.get(bucketKey);
     bucket.commits.push(...(contributor.commits || []));
+  });
+
+  students.forEach((student) => {
+    const bucketKey = `student:${student.id}`;
+    if (merged.has(bucketKey)) return;
+
+    const primaryIdentity = getStudentPrimaryIdentity(student);
+    merged.set(bucketKey, {
+      name: student.name || "Unknown",
+      email: primaryIdentity?.gitEmail || `student-${student.id}@unmapped.local`,
+      universityId: student.universityId || null,
+      commits: [],
+    });
   });
 
   return finalizeContributors(Array.from(merged.values()), moduleConfig);

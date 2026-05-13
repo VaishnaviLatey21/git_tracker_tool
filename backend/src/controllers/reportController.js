@@ -4,17 +4,26 @@ const { Parser } = require("json2csv");
 const PDFDocument = require("pdfkit");
 const { parseRepositoryUrl } = require("../utils/repoParser");
 const { fetchGitHubRepoData } = require("../services/githubService");
-const { fetchGitLabRepoData } = require("../services/gitlabService");
+const {
+  fetchGitLabRepoData,
+  fetchGitLabBranchTipShas,
+} = require("../services/gitlabService");
 const {
   fetchRepositoryContributorsWithIdentity,
   fetchStoredRepositoryContributorsWithIdentity,
   persistContributorCommits,
 } = require("../services/repositoryAnalyticsService");
 
+const normalizeThreshold = (value, fallback) => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(0, parsed);
+};
+
 const extractModuleConfig = (module) => ({
-  inactivityDays: module?.inactivityDays || 7,
-  minExpectedCommits: module?.minExpectedCommits || 3,
-  smallCommitThreshold: module?.smallCommitThreshold || 5,
+  inactivityDays: normalizeThreshold(module?.inactivityDays, 7),
+  minExpectedCommits: normalizeThreshold(module?.minExpectedCommits, 3),
+  smallCommitThreshold: normalizeThreshold(module?.smallCommitThreshold, 5),
 });
 
 const getRemoteTotalCommits = async (repository) => {
@@ -34,6 +43,29 @@ const getRemoteTotalCommits = async (repository) => {
   }
 };
 
+const hasMissingGitLabBranchTips = async (repository) => {
+  try {
+    if ((repository.platform || "").toUpperCase() !== "GITLAB") {
+      return false;
+    }
+
+    const { baseUrl, owner, repo } = parseRepositoryUrl(repository.url);
+    const tipShas = await fetchGitLabBranchTipShas(baseUrl, owner, repo);
+    if (!tipShas.length) return false;
+
+    const matchedTipCount = await prisma.commit.count({
+      where: {
+        repositoryId: repository.id,
+        sha: { in: tipShas },
+      },
+    });
+
+    return matchedTipCount < tipShas.length;
+  } catch (_error) {
+    return false;
+  }
+};
+
 const shouldRefreshFromRemote = async (
   repository,
   storedCommitCount,
@@ -41,6 +73,9 @@ const shouldRefreshFromRemote = async (
 ) => {
   if (forceRefresh) return true;
   if (!storedCommitCount) return true;
+
+  const hasMissingTips = await hasMissingGitLabBranchTips(repository);
+  if (hasMissingTips) return true;
 
   const remoteTotal = await getRemoteTotalCommits(repository);
   if (remoteTotal == null) return false;
@@ -122,6 +157,11 @@ const generateReportData = async (groupId, convenorId, forceRefresh = false) => 
   return {
     groupName: group.name,
     moduleName: group.module.name,
+    thresholds: {
+      minExpectedCommits: moduleConfig.minExpectedCommits,
+      inactivityDays: moduleConfig.inactivityDays,
+      smallCommitThreshold: moduleConfig.smallCommitThreshold,
+    },
     totalCommits,
     students: mappedContributors.map((contributor) => ({
       name: contributor.name,
@@ -132,6 +172,9 @@ const generateReportData = async (groupId, convenorId, forceRefresh = false) => 
       lowQualityCommits: contributor.lowQualityCommits,
       inactivityGapCount: contributor.inactivityGaps?.length || 0,
       inactivityFlag: (contributor.inactivityGaps?.length || 0) > 0,
+      belowExpectedCommits: !!contributor.belowExpectedCommits,
+      expectedCommitsTarget:
+        contributor.expectedCommitsTarget ?? moduleConfig.minExpectedCommits,
       deadlineSpike: !!contributor.deadlineSpike,
     })),
   };
@@ -192,6 +235,9 @@ exports.exportGroupReportPDF = async (req, res) => {
     doc.text(`Module: ${report.moduleName}`);
     doc.text(`Group: ${report.groupName}`);
     doc.text(`Total Commits: ${report.totalCommits}`);
+    doc.text(
+      `Thresholds - Min Commits: ${report.thresholds.minExpectedCommits}, Inactivity: ${report.thresholds.inactivityDays} days, Small Commit: < ${report.thresholds.smallCommitThreshold} lines`
+    );
     doc.moveDown();
 
     report.students.forEach((student) => {
@@ -205,6 +251,9 @@ exports.exportGroupReportPDF = async (req, res) => {
       doc.text(`Low Quality Commits: ${student.lowQualityCommits}`);
       doc.text(`Inactivity Gaps: ${student.inactivityGapCount}`);
       doc.text(`Inactivity Flag: ${student.inactivityFlag ? "Yes" : "No"}`);
+      doc.text(
+        `Below Expected (${student.expectedCommitsTarget}): ${student.belowExpectedCommits ? "Yes" : "No"}`
+      );
       doc.text(`Deadline Spike: ${student.deadlineSpike}`);
       doc.moveDown();
     });

@@ -3,12 +3,21 @@ const prisma = new PrismaClient();
 
 const { parseRepositoryUrl } = require("../utils/repoParser");
 const { fetchGitHubRepoData } = require("../services/githubService");
-const { fetchGitLabRepoData } = require("../services/gitlabService");
+const {
+  fetchGitLabRepoData,
+  fetchGitLabBranchTipShas,
+} = require("../services/gitlabService");
 const {
   fetchRepositoryContributorsWithIdentity,
   fetchStoredRepositoryContributorsWithIdentity,
   persistContributorCommits,
 } = require("../services/repositoryAnalyticsService");
+
+const normalizeThreshold = (value, fallback) => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(0, parsed);
+};
 
 const parseGroupId = (value) => {
   const parsed = Number.parseInt(value, 10);
@@ -59,9 +68,9 @@ const getRepositoryOwnedByConvenor = async (groupId, convenorId) =>
   });
 
 const extractModuleConfig = (module) => ({
-  inactivityDays: module?.inactivityDays || 7,
-  minExpectedCommits: module?.minExpectedCommits || 3,
-  smallCommitThreshold: module?.smallCommitThreshold || 5,
+  inactivityDays: normalizeThreshold(module?.inactivityDays, 7),
+  minExpectedCommits: normalizeThreshold(module?.minExpectedCommits, 3),
+  smallCommitThreshold: normalizeThreshold(module?.smallCommitThreshold, 5),
 });
 
 const getRemoteTotalCommits = async (repository) => {
@@ -81,6 +90,29 @@ const getRemoteTotalCommits = async (repository) => {
   }
 };
 
+const hasMissingGitLabBranchTips = async (repository) => {
+  try {
+    if ((repository.platform || "").toUpperCase() !== "GITLAB") {
+      return false;
+    }
+
+    const { baseUrl, owner, repo } = parseRepositoryUrl(repository.url);
+    const tipShas = await fetchGitLabBranchTipShas(baseUrl, owner, repo);
+    if (!tipShas.length) return false;
+
+    const matchedTipCount = await prisma.commit.count({
+      where: {
+        repositoryId: repository.id,
+        sha: { in: tipShas },
+      },
+    });
+
+    return matchedTipCount < tipShas.length;
+  } catch (_error) {
+    return false;
+  }
+};
+
 const shouldRefreshFromRemote = async (
   repository,
   storedCommitCount,
@@ -88,6 +120,9 @@ const shouldRefreshFromRemote = async (
 ) => {
   if (forceRefresh) return true;
   if (!storedCommitCount) return true;
+
+  const hasMissingTips = await hasMissingGitLabBranchTips(repository);
+  if (hasMissingTips) return true;
 
   const remoteTotal = await getRemoteTotalCommits(repository);
   if (remoteTotal == null) return false;

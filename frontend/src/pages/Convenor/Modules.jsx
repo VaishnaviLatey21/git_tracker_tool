@@ -25,9 +25,9 @@ const yearOptions = [
 const initialForm = {
   name: "",
   year: "2025 - 2026",
-  minExpectedCommits: 0,
-  inactivityDays: 0,
-  smallCommitThreshold: 0,
+  minExpectedCommits: 10,
+  inactivityDays: 7,
+  smallCommitThreshold: 10,
 };
 
 const initialProvisionForm = {
@@ -352,6 +352,9 @@ function Modules() {
                   }
                   className="conv-input"
                 />
+                <span className="conv-field-help">
+                  Students below this count are flagged in group evidence reports.
+                </span>
               </label>
 
               <label className="conv-field">
@@ -368,6 +371,9 @@ function Modules() {
                   }
                   className="conv-input"
                 />
+                <span className="conv-field-help">
+                  A gap of this many days or more between commits triggers inactivity.
+                </span>
               </label>
 
               <label className="conv-field">
@@ -384,6 +390,9 @@ function Modules() {
                   }
                   className="conv-input"
                 />
+                <span className="conv-field-help">
+                  Commits with total changed lines below this are marked as small commits.
+                </span>
               </label>
             </div>
 

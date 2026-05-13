@@ -3,7 +3,7 @@ import { Trash2, UserRoundSearch } from "lucide-react";
 import { useOutletContext } from "react-router-dom";
 import axios from "../../api/axios";
 
-const roleOptions = ["ADMIN", "CONVENOR", "STUDENT"];
+const roleOptions = ["ADMIN", "CONVENOR"];
 
 function AdminUsers() {
   const { user: currentUser } = useOutletContext() || {};
