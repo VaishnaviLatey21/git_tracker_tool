@@ -18,7 +18,11 @@ function AdminLogin() {
     setError("");
 
     try {
-      const response = await axios.post("/auth/login", { email, password });
+      const normalizedEmail = email.trim().toLowerCase();
+      const response = await axios.post("/auth/login", {
+        email: normalizedEmail,
+        password,
+      });
       const userRole = response.data?.user?.role;
 
       if (userRole !== "ADMIN") {
@@ -75,13 +79,14 @@ function AdminLogin() {
 
             <label className="block">
               <span className="mb-1 block text-xs font-semibold uppercase tracking-wider text-[#9eb3d8]">
-                Email
+                Email or Username
               </span>
               <input
-                type="email"
+                type="text"
                 required
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
+                placeholder="admin@domain.com or admin1"
                 className="w-full rounded-xl border border-[#45578e] bg-[#0e1738] px-3 py-2.5 text-white outline-none transition focus:border-[#5e7be5]"
               />
             </label>

@@ -95,17 +95,17 @@ function AdminUsers() {
   }
 
   return (
-    <div className="space-y-4">
-      <section className="rounded-2xl border border-[#d7e1f0] bg-white p-5 shadow-sm">
+    <div className="admin-page space-y-4">
+      <section className="admin-surface rounded-2xl border border-[#d7e1f0] bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#7188a9]">
               User Management
             </p>
-            <h1 className="text-2xl font-bold text-[#21344e]">Manage Accounts</h1>
+            <h1 className="text-xl font-bold text-[#21344e] sm:text-2xl">Manage Accounts</h1>
           </div>
 
-          <div className="flex min-w-[240px] items-center gap-2 rounded-xl border border-[#d6e0ef] bg-[#f9fbff] px-3 py-2">
+          <div className="flex w-full items-center gap-2 rounded-xl border border-[#d6e0ef] bg-[#f9fbff] px-3 py-2 sm:min-w-[240px] sm:w-auto">
             <UserRoundSearch className="h-4 w-4 text-[#6b809f]" />
             <input
               value={search}
@@ -123,17 +123,17 @@ function AdminUsers() {
         )}
       </section>
 
-      <section className="rounded-2xl border border-[#d7e1f0] bg-white p-5 shadow-sm">
+      <section className="admin-surface rounded-2xl border border-[#d7e1f0] bg-white p-5 shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[860px] text-left text-sm">
+          <table className="w-full min-w-[680px] text-left text-sm sm:min-w-[860px]">
             <thead>
               <tr className="border-b border-[#e2e9f4] text-xs uppercase tracking-wider text-[#6f85a5]">
                 <th className="px-3 py-3">Name</th>
-                <th className="px-3 py-3">Email</th>
+                <th className="hidden px-3 py-3 md:table-cell">Email</th>
                 <th className="px-3 py-3">Role</th>
-                <th className="px-3 py-3">Verified</th>
-                <th className="px-3 py-3">Modules</th>
-                <th className="px-3 py-3">Created</th>
+                <th className="hidden px-3 py-3 sm:table-cell">Verified</th>
+                <th className="hidden px-3 py-3 sm:table-cell">Modules</th>
+                <th className="hidden px-3 py-3 lg:table-cell">Created</th>
                 <th className="px-3 py-3">Actions</th>
               </tr>
             </thead>
@@ -145,7 +145,7 @@ function AdminUsers() {
                 return (
                   <tr key={item.id} className="border-b border-[#edf2f9] text-[#29405f]">
                     <td className="px-3 py-3 font-semibold">{item.name}</td>
-                    <td className="px-3 py-3">{item.email}</td>
+                    <td className="hidden px-3 py-3 md:table-cell">{item.email}</td>
                     <td className="px-3 py-3">
                       <select
                         value={pendingRoles[item.id] || item.role}
@@ -165,7 +165,7 @@ function AdminUsers() {
                         ))}
                       </select>
                     </td>
-                    <td className="px-3 py-3">
+                    <td className="hidden px-3 py-3 sm:table-cell">
                       {item.isVerified ? (
                         <span className="rounded-full bg-[#e7f8ee] px-2 py-1 text-xs font-semibold text-[#2f7e54]">
                           Yes
@@ -176,8 +176,8 @@ function AdminUsers() {
                         </span>
                       )}
                     </td>
-                    <td className="px-3 py-3">{item._count?.modules || 0}</td>
-                    <td className="px-3 py-3">
+                    <td className="hidden px-3 py-3 sm:table-cell">{item._count?.modules || 0}</td>
+                    <td className="hidden px-3 py-3 lg:table-cell">
                       {new Date(item.createdAt).toLocaleDateString("en-GB")}
                     </td>
                     <td className="px-3 py-3">
@@ -188,7 +188,8 @@ function AdminUsers() {
                           disabled={isSaving || pendingRoles[item.id] === item.role}
                           className="rounded-lg border border-[#cad9ee] bg-[#edf4ff] px-2.5 py-1.5 text-xs font-semibold text-[#365a89] disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          Save Role
+                          <span className="sm:hidden">Save</span>
+                          <span className="hidden sm:inline">Save Role</span>
                         </button>
                         <button
                           type="button"

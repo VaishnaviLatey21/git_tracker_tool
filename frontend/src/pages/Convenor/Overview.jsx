@@ -915,7 +915,7 @@ function Overview() {
                   <Legend verticalAlign="top" height={26} iconType="line" />
                   <Line
                     yAxisId="left"
-                    type="linear"
+                    type="monotone"
                     dataKey="commits"
                     name="Total Commits"
                     stroke="#2c7cc7"
@@ -925,7 +925,7 @@ function Overview() {
                   />
                   <Line
                     yAxisId="right"
-                    type="linear"
+                    type="monotone"
                     dataKey="activeContributors"
                     name="Active Students"
                     stroke="#1f9f89"
@@ -934,7 +934,7 @@ function Overview() {
                   />
                   <Line
                     yAxisId="left"
-                    type="linear"
+                    type="monotone"
                     dataKey="lowQuality"
                     name="Low-quality Commits"
                     stroke="#d77b42"
@@ -945,7 +945,7 @@ function Overview() {
                     <Line
                       key={line.key}
                       yAxisId="left"
-                      type="linear"
+                      type="monotone"
                       dataKey={line.key}
                       name={`${line.label} commits`}
                       stroke={line.color}

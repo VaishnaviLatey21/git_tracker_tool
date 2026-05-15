@@ -12,12 +12,15 @@ import {
   LogOut,
   Menu,
   MessageSquare,
+  Moon,
   ShieldCheck,
+  Sun,
   UserCog,
   Users,
   X,
 } from "lucide-react";
 import axios from "../api/axios";
+import { useTheme } from "../context/ThemeContext";
 
 const navItems = [
   { label: "Dashboard", to: "/admin", icon: Activity },
@@ -46,6 +49,8 @@ const formatRelativeDate = (value) => {
 function AdminLayout() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { theme, toggleTheme } = useTheme();
+  const isDark = theme === "dark";
 
   const [user, setUser] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -235,8 +240,8 @@ function AdminLayout() {
   const unreadCount = adminNotifications.length;
 
   return (
-    <div className="min-h-screen bg-[#f4f6fb]">
-      <div className="mx-auto flex max-w-[1760px]">
+    <div className={`admin-shell min-h-screen ${isDark ? "theme-dark" : "theme-light"} bg-[#f4f6fb]`}>
+      <div className="mx-auto flex w-full max-w-[1760px] overflow-x-hidden">
         <aside
           className={`fixed inset-y-0 left-0 z-40 w-[252px] border-r border-[#1a4e31] bg-gradient-to-b from-[#0f3a25] via-[#134b2f] to-[#103528] text-white transition-transform duration-300 md:static md:translate-x-0 ${
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
@@ -289,8 +294,8 @@ function AdminLayout() {
           </div>
         </aside>
 
-        <div className="min-h-screen flex-1">
-          <header className="sticky top-0 z-30 border-b border-[#dee4f0] bg-white px-4 py-3 md:px-7">
+        <div className="min-h-screen flex-1 overflow-x-hidden">
+          <header className="admin-header sticky top-0 z-30 border-b border-[#dee4f0] bg-white px-4 py-3 md:px-7">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <button
@@ -312,6 +317,16 @@ function AdminLayout() {
               </div>
 
               <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={toggleTheme}
+                  className="rounded-lg border border-[#dce5f2] bg-white p-2 text-[#627795] hover:bg-[#f5f8fc]"
+                  title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+                  aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+                >
+                  {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                </button>
+
                 <div className="relative" ref={notificationsRef}>
                   <button
                     type="button"
@@ -421,7 +436,7 @@ function AdminLayout() {
             </div>
           </header>
 
-          <main className="p-4 md:p-7">
+          <main className="admin-main p-4 md:p-7">
             <Outlet
               context={{
                 user,
@@ -436,8 +451,8 @@ function AdminLayout() {
 
       {supportChatOpen && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[#0f1f38]/35 p-4 backdrop-blur-[1px]">
-          <div className="flex h-[86vh] w-full max-w-[1120px] overflow-hidden rounded-2xl border border-[#d4deee] bg-white shadow-2xl">
-            <aside className="w-[320px] border-r border-[#e1e8f3] bg-[#f8fbff]">
+          <div className="flex h-[86vh] w-full max-w-[1120px] flex-col overflow-hidden rounded-2xl border border-[#d4deee] bg-white shadow-2xl md:flex-row">
+            <aside className="w-full border-b border-[#e1e8f3] bg-[#f8fbff] md:w-[320px] md:border-b-0 md:border-r">
               <div className="flex items-center justify-between border-b border-[#e1e8f3] px-4 py-3">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wider text-[#6981a3]">
@@ -459,7 +474,7 @@ function AdminLayout() {
                 </button>
               </div>
 
-              <div className="max-h-[calc(86vh-66px)] overflow-y-auto p-2">
+              <div className="max-h-[calc(32vh-66px)] overflow-y-auto p-2 md:max-h-[calc(86vh-66px)]">
                 {(supportLoading || threadLoading) && threads.length === 0 && (
                   <p className="rounded-xl bg-white px-3 py-3 text-sm text-[#5e7698]">
                     Loading threads...

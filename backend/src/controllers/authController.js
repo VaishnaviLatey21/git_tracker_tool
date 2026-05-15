@@ -7,15 +7,24 @@ const sendOTPEmail = require("../utils/sendVerificationEmail");
 const prisma = new PrismaClient();
 
 const SALT_ROUNDS = Number.parseInt(process.env.BCRYPT_SALT_ROUNDS, 10) || 10;
+const BCRYPT_HASH_PATTERN = /^\$2[aby]\$\d{2}\$.{53}$/;
+
+const normalizeEmail = (value) => String(value || "").trim().toLowerCase();
+const isBcryptHash = (value) => BCRYPT_HASH_PATTERN.test(String(value || ""));
 
 // REGISTER (role-based)
 exports.register = async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, password, role } = req.body;
+    const email = normalizeEmail(req.body?.email);
 
     // 1. Validate role
     if (!["CONVENOR", "STUDENT"].includes(role)) {
       return res.status(400).json({ message: "Invalid role" });
+    }
+
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
     }
 
     // 2. Check if user already exists
@@ -58,7 +67,8 @@ exports.register = async (req, res) => {
 // ADMIN REGISTER (separate route + secret key gate)
 exports.adminRegister = async (req, res) => {
   try {
-    const { name, email, password, adminKey } = req.body;
+    const { name, password, adminKey } = req.body;
+    const email = normalizeEmail(req.body?.email);
 
     if (!name || !email || !password || !adminKey) {
       return res.status(400).json({ message: "Missing required fields" });
@@ -106,11 +116,23 @@ exports.adminRegister = async (req, res) => {
 
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const loginIdentifierRaw = String(req.body?.email || "").trim();
+    const email = normalizeEmail(loginIdentifierRaw);
+    const password = String(req.body?.password || "");
 
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
+    if (!loginIdentifierRaw || !password) {
+      return res.status(400).json({ message: "Email and password are required" });
+    }
+
+    const user = loginIdentifierRaw.includes("@")
+      ? await prisma.user.findUnique({
+          where: { email },
+        })
+      : await prisma.user.findFirst({
+          where: {
+            OR: [{ email }, { name: loginIdentifierRaw }],
+          },
+        });
 
     if (!user) {
       return res.status(400).json({ message: "Invalid credentials" });
@@ -122,10 +144,26 @@ exports.login = async (req, res) => {
       });
     }
 
-    const validPassword = await bcrypt.compare(password, user.password);
+    let validPassword = false;
+    let shouldMigrateLegacyPassword = false;
+
+    if (isBcryptHash(user.password)) {
+      validPassword = await bcrypt.compare(password, user.password);
+    } else {
+      validPassword = password === String(user.password || "");
+      shouldMigrateLegacyPassword = validPassword;
+    }
 
     if (!validPassword) {
       return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    if (shouldMigrateLegacyPassword) {
+      const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { password: hashedPassword },
+      });
     }
 
     const token = jwt.sign(
@@ -152,7 +190,8 @@ exports.login = async (req, res) => {
 
 exports.verifyOTP = async (req, res) => {
   try {
-    const { email, otp } = req.body;
+    const email = normalizeEmail(req.body?.email);
+    const otp = String(req.body?.otp || "").trim();
     console.log("otp:", otp)
     console.log("email:", email)
 
@@ -208,7 +247,7 @@ exports.getCurrentUser = async (req, res) => {
 // FORGOT PASSWORD - send OTP
 exports.forgotPassword = async (req, res) => {
   try {
-    const email = String(req.body?.email || "").trim();
+    const email = normalizeEmail(req.body?.email);
     if (!email) {
       return res.status(400).json({ message: "Email is required" });
     }
@@ -243,7 +282,7 @@ exports.forgotPassword = async (req, res) => {
 // RESET PASSWORD - verify OTP and set new password
 exports.resetPassword = async (req, res) => {
   try {
-    const email = String(req.body?.email || "").trim();
+    const email = normalizeEmail(req.body?.email);
     const otp = String(req.body?.otp || "").trim();
     const newPassword = String(req.body?.newPassword || "");
 

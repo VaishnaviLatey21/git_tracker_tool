@@ -9,8 +9,8 @@ const mockLogs = [
 
 function AdminLogs() {
   return (
-    <div className="space-y-4">
-      <section className="rounded-2xl border border-[#d7e1f0] bg-white p-5 shadow-sm">
+    <div className="admin-page space-y-4">
+      <section className="admin-surface rounded-2xl border border-[#d7e1f0] bg-white p-5 shadow-sm">
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#7188a9]">Logs & Activity</p>
@@ -24,7 +24,7 @@ function AdminLogs() {
 
         <div className="mt-4 space-y-2">
           {mockLogs.map((log) => (
-            <article key={log.id} className="rounded-xl border border-[#d8e3f2] bg-[#f9fbff] p-3">
+            <article key={log.id} className="admin-surface-muted rounded-xl border border-[#d8e3f2] bg-[#f9fbff] p-3">
               <p className="text-sm font-semibold text-[#2f4768]"><FileText className="mr-1 inline h-3.5 w-3.5" /> {log.event}</p>
               <p className="mt-1 text-xs text-[#6f86a6]"><Clock3 className="mr-1 inline h-3.5 w-3.5" /> {log.time}</p>
             </article>

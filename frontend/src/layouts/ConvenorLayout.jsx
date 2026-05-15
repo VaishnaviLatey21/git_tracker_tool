@@ -14,13 +14,16 @@ import {
   LogOut,
   Menu,
   MessageSquareDot,
+  Moon,
   Send,
   Settings2,
+  Sun,
   UserRound,
   UsersRound,
   X,
 } from "lucide-react";
 import axios from "../api/axios";
+import { useTheme } from "../context/ThemeContext";
 
 const navItems = [
   { label: "Dashboard", to: "/convenor", icon: LayoutDashboard },
@@ -269,13 +272,13 @@ function ConvenorChatModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0d1a2d]/45 p-4">
-      <div className="grid h-[80vh] w-full max-w-5xl grid-cols-[300px_1fr] overflow-hidden rounded-2xl border border-[#d5deea] bg-white shadow-2xl">
-        <aside className="border-r border-[#e6edf7] bg-[#f8fbff]">
+      <div className="grid h-[84vh] w-full max-w-5xl grid-cols-1 overflow-hidden rounded-2xl border border-[#d5deea] bg-white shadow-2xl md:h-[80vh] md:grid-cols-[300px_1fr]">
+        <aside className="border-b border-[#e6edf7] bg-[#f8fbff] md:border-b-0 md:border-r">
           <div className="border-b border-[#e6edf7] px-4 py-3">
             <h2 className="text-lg font-bold text-[#1f2f47]">Admin Chat</h2>
             <p className="text-xs text-[#6f87a6]">Ask questions and track replies.</p>
           </div>
-          <div className="max-h-[calc(80vh-74px)] space-y-2 overflow-y-auto p-3">
+          <div className="max-h-[32vh] space-y-2 overflow-y-auto p-3 md:max-h-[calc(80vh-74px)]">
             {threads.length === 0 && (
               <p className="rounded-lg border border-dashed border-[#d4e0ef] bg-white p-3 text-sm text-[#607b9c]">
                 No questions yet. Create one from the panel.
@@ -413,6 +416,8 @@ function ConvenorChatModal({
 function ConvenorLayout() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { theme, toggleTheme } = useTheme();
+  const isDark = theme === "dark";
 
   const [user, setUser] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -618,8 +623,8 @@ function ConvenorLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f7fb]">
-      <div className="mx-auto flex max-w-[1760px] gap-0">
+    <div className={`convenor-shell min-h-screen ${isDark ? "theme-dark" : "theme-light"} bg-[#f5f7fb]`}>
+      <div className="mx-auto flex w-full max-w-[1760px] gap-0 overflow-x-hidden">
         <aside
           className={`fixed inset-y-0 left-0 z-40 w-[248px] border-r border-[#22395f] bg-gradient-to-b from-[#102541] via-[#122e55] to-[#0f2747] text-white transition-transform duration-300 md:static md:translate-x-0 ${
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
@@ -672,8 +677,8 @@ function ConvenorLayout() {
           </div>
         </aside>
 
-        <div className="min-h-screen flex-1">
-          <header className="sticky top-0 z-30 border-b border-[#dde5f1] bg-white px-4 py-3 md:px-7">
+        <div className="min-h-screen flex-1 overflow-x-hidden">
+          <header className="convenor-header sticky top-0 z-30 border-b border-[#dde5f1] bg-white px-4 py-3 md:px-7">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <button
@@ -695,6 +700,16 @@ function ConvenorLayout() {
               </div>
 
               <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={toggleTheme}
+                  className="rounded-lg border border-[#dce5f2] bg-white p-2 text-[#627795] hover:bg-[#f5f8fc]"
+                  title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+                  aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+                >
+                  {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                </button>
+
                 <div className="relative" ref={notificationRef}>
                   <button
                     type="button"
@@ -830,7 +845,7 @@ function ConvenorLayout() {
             </div>
           </header>
 
-          <main className="p-4 md:p-7">
+          <main className="convenor-main p-4 md:p-7">
             <Outlet context={{ user }} />
           </main>
         </div>

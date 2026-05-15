@@ -86,8 +86,8 @@ function AdminOverview() {
   }
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-2xl border border-[#d7e1f0] bg-white p-4 shadow-sm">
+    <div className="admin-page space-y-6">
+      <section className="admin-surface rounded-2xl border border-[#d7e1f0] bg-white p-4 shadow-sm">
         <div className="grid gap-3 md:grid-cols-4">
           <label className="block">
             <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-[#6f86a6]">Module</span>
@@ -125,7 +125,7 @@ function AdminOverview() {
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        <article className="rounded-2xl border border-[#d7e1f0] bg-white p-5 shadow-sm">
+        <article className="admin-surface rounded-2xl border border-[#d7e1f0] bg-white p-5 shadow-sm">
           <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#7188a9]">
             <Users className="h-3.5 w-3.5" />
             Users
@@ -136,7 +136,7 @@ function AdminOverview() {
           </p>
         </article>
 
-        <article className="rounded-2xl border border-[#d7e1f0] bg-white p-5 shadow-sm">
+        <article className="admin-surface rounded-2xl border border-[#d7e1f0] bg-white p-5 shadow-sm">
           <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#7188a9]">
             <Database className="h-3.5 w-3.5" />
             Convenors
@@ -145,7 +145,7 @@ function AdminOverview() {
           <p className="mt-1 text-sm text-[#6b819f]">Active module convenors</p>
         </article>
 
-        <article className="rounded-2xl border border-[#d7e1f0] bg-white p-5 shadow-sm">
+        <article className="admin-surface rounded-2xl border border-[#d7e1f0] bg-white p-5 shadow-sm">
           <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#7188a9]">
             <GitCommitHorizontal className="h-3.5 w-3.5" />
             Modules
@@ -154,7 +154,7 @@ function AdminOverview() {
           <p className="mt-1 text-sm text-[#6b819f]">Total modules</p>
         </article>
 
-        <article className="rounded-2xl border border-[#d7e1f0] bg-white p-5 shadow-sm">
+        <article className="admin-surface rounded-2xl border border-[#d7e1f0] bg-white p-5 shadow-sm">
           <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#7188a9]">
             <Users className="h-3.5 w-3.5" />
             Groups
@@ -163,7 +163,7 @@ function AdminOverview() {
           <p className="mt-1 text-sm text-[#6b819f]">Total groups</p>
         </article>
 
-        <article className="rounded-2xl border border-[#d7e1f0] bg-white p-5 shadow-sm">
+        <article className="admin-surface rounded-2xl border border-[#d7e1f0] bg-white p-5 shadow-sm">
           <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#7188a9]">
             <Database className="h-3.5 w-3.5" />
             Repositories
@@ -174,7 +174,7 @@ function AdminOverview() {
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-        <article className="rounded-2xl border border-[#d7e1f0] bg-white p-5 shadow-sm">
+        <article className="admin-surface rounded-2xl border border-[#d7e1f0] bg-white p-5 shadow-sm">
           <div className="mb-3 flex items-center justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#7188a9]">
@@ -206,7 +206,7 @@ function AdminOverview() {
           </div>
         </article>
 
-        <article className="rounded-2xl border border-[#d7e1f0] bg-white p-5 shadow-sm">
+        <article className="admin-surface rounded-2xl border border-[#d7e1f0] bg-white p-5 shadow-sm">
           <div className="mb-3 flex items-center justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#7188a9]">
@@ -249,7 +249,7 @@ function AdminOverview() {
         </article>
       </section>
 
-      <section className="rounded-2xl border border-[#d7e1f0] bg-white p-5 shadow-sm">
+      <section className="admin-surface rounded-2xl border border-[#d7e1f0] bg-white p-5 shadow-sm">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#7188a9]">

@@ -70,12 +70,12 @@ function AdminRoles() {
   }
 
   return (
-    <div className="space-y-4">
-      <section className="rounded-2xl border border-[#d7e1f0] bg-white p-5 shadow-sm">
+    <div className="admin-page space-y-4">
+      <section className="admin-surface rounded-2xl border border-[#d7e1f0] bg-white p-5 shadow-sm">
         <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#7188a9]">
           Role Management
         </p>
-        <h1 className="text-2xl font-bold text-[#21344e]">Role Governance</h1>
+        <h1 className="text-xl font-bold text-[#21344e] sm:text-2xl">Role Governance</h1>
         <p className="mt-1 text-sm text-[#5f7698]">
           Control who can access admin controls, convenor tooling, and student-facing views.
         </p>
@@ -111,15 +111,15 @@ function AdminRoles() {
         )}
       </section>
 
-      <section className="rounded-2xl border border-[#d7e1f0] bg-white p-5 shadow-sm">
+      <section className="admin-surface rounded-2xl border border-[#d7e1f0] bg-white p-5 shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[760px] text-left text-sm">
+          <table className="w-full min-w-[620px] text-left text-sm sm:min-w-[760px]">
             <thead>
               <tr className="border-b border-[#e2e9f4] text-xs uppercase tracking-wider text-[#6f85a5]">
                 <th className="px-3 py-3">User</th>
-                <th className="px-3 py-3">Email</th>
+                <th className="hidden px-3 py-3 md:table-cell">Email</th>
                 <th className="px-3 py-3">Current Role</th>
-                <th className="px-3 py-3">Assign New Role</th>
+                <th className="hidden px-3 py-3 sm:table-cell">Assign New Role</th>
                 <th className="px-3 py-3">Action</th>
               </tr>
             </thead>
@@ -129,9 +129,9 @@ function AdminRoles() {
                 return (
                   <tr key={row.id} className="border-b border-[#edf2f9] text-[#29405f]">
                     <td className="px-3 py-3 font-semibold">{row.name}</td>
-                    <td className="px-3 py-3">{row.email}</td>
+                    <td className="hidden px-3 py-3 md:table-cell">{row.email}</td>
                     <td className="px-3 py-3">{row.role}</td>
-                    <td className="px-3 py-3">
+                    <td className="hidden px-3 py-3 sm:table-cell">
                       <select
                         value={pendingRoles[row.id] || row.role}
                         onChange={(event) =>
@@ -157,7 +157,8 @@ function AdminRoles() {
                         disabled={isSaving || pendingRoles[row.id] === row.role}
                         className="rounded-lg border border-[#cad9ee] bg-[#edf4ff] px-2.5 py-1.5 text-xs font-semibold text-[#365a89] disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        Save Role
+                        <span className="sm:hidden">Save</span>
+                        <span className="hidden sm:inline">Save Role</span>
                       </button>
                     </td>
                   </tr>

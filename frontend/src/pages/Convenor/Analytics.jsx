@@ -1,6 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { Activity, CalendarRange, Filter, Users } from "lucide-react";
-import { Line, LineChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import {
+  Area,
+  CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import axios from "../../api/axios";
 
 const formatDateInput = (value) => {
@@ -138,9 +147,21 @@ function ConvenorAnalytics() {
       });
     });
 
-    return Array.from(buckets.entries())
+    const sorted = Array.from(buckets.entries())
       .map(([date, commits]) => ({ date, commits }))
       .sort((a, b) => a.date.localeCompare(b.date));
+
+    return sorted.map((row, index) => {
+      const windowRows = sorted.slice(Math.max(0, index - 2), index + 1);
+      const rollingAverage =
+        windowRows.reduce((sum, item) => sum + Number(item.commits || 0), 0) /
+        windowRows.length;
+
+      return {
+        ...row,
+        rollingAverage: Number(rollingAverage.toFixed(1)),
+      };
+    });
   }, [filteredContributors]);
 
   const tableRows = useMemo(() => {
@@ -260,17 +281,39 @@ function ConvenorAnalytics() {
           ) : (
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={trendData}>
+                <defs>
+                  <linearGradient id="commitGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#2f6fca" stopOpacity={0.36} />
+                    <stop offset="95%" stopColor="#2f6fca" stopOpacity={0.04} />
+                  </linearGradient>
+                </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#dce6f3" />
                 <XAxis dataKey="date" stroke="#7087a4" />
                 <YAxis allowDecimals={false} stroke="#7087a4" />
                 <Tooltip />
+                <Area
+                  type="monotone"
+                  dataKey="commits"
+                  stroke="none"
+                  fill="url(#commitGradient)"
+                />
                 <Line
                   type="monotone"
                   dataKey="commits"
                   stroke="#2f6fca"
-                  strokeWidth={2.6}
-                  dot={{ r: 3 }}
-                  activeDot={{ r: 5 }}
+                  strokeWidth={2.8}
+                  dot={false}
+                  activeDot={{ r: 4.5 }}
+                  strokeLinecap="round"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="rollingAverage"
+                  name="3-point average"
+                  stroke="#18a58d"
+                  strokeWidth={2}
+                  strokeDasharray="6 4"
+                  dot={false}
                 />
               </LineChart>
             </ResponsiveContainer>
